@@ -25,6 +25,7 @@ function SignupForm() {
   const router = useRouter();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authLoading = useSelector(selectAuthLoading);
+  const trialDays = referralCode ? 30 : 7;
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -171,7 +172,10 @@ function SignupForm() {
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10 text-black">{t('signupTitle')}</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold text-black">{t('signupTitle')}</h1>
+      <p className="mt-3 mb-8 max-w-2xl text-sm font-medium leading-6 text-gray-600 sm:mb-10">
+        {t('trialActivationCopy', { days: trialDays })}
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">

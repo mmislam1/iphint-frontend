@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { apiClient, getApiErrorMessage } from '@/lib/api';
+import type { SignupOffer } from '@/lib/billingAccess';
 import { detectCountryCodeByIp } from '../../currency';
 
 export type PlanTier = 'starter' | 'pro' | 'premium';
@@ -41,14 +42,16 @@ export interface BillingSnapshot {
     pendingPlan?: {
       tier: PlanTier;
       name: string;
-      billingCycle: BillingCycle;
+      billingCycle?: BillingCycle;
+      cycle?: BillingCycle;
       effectiveAt?: string | null;
     } | null;
   } | null;
-  plan: BillingPlan;
+  signupOffer?: SignupOffer | null;
+  plan?: BillingPlan | null;
   credits?: number;
   alertsRemaining?: number;
-  usage: {
+  usage?: {
     imagesUsedThisMonth: number;
     imageUploadLimit: number;
     alertLimit: number;
@@ -246,13 +249,27 @@ export const resumeAutoRenew = createAsyncThunk<
 });
 
 export const upgradeSubscription = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  {
+    plans: BillingPlan[];
+    snapshot: BillingSnapshot | null;
+    countryCode: string;
+    unusedDaysAdded?: number;
+    message?: string;
+  },
   { tier: PlanTier; billingCycle?: BillingCycle },
   { rejectValue: string }
 >('account/upgradeSubscription', async (payload, { dispatch, rejectWithValue }) => {
   try {
-    await apiClient.patch('/billing/subscription', payload);
-    return await dispatch(fetchBillingPageData()).unwrap();
+    const response = await apiClient.patch('/billing/subscription', payload);
+    const pageData = await dispatch(fetchBillingPageData()).unwrap();
+    return {
+      ...pageData,
+      unusedDaysAdded:
+        typeof response.data?.unusedDaysAdded === 'number'
+          ? response.data.unusedDaysAdded
+          : undefined,
+      message: typeof response.data?.message === 'string' ? response.data.message : undefined,
+    };
   } catch (error) {
     return rejectWithValue(getApiErrorMessage(error, 'Failed to change subscription.'));
   }

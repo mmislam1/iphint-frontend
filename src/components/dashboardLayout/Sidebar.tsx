@@ -8,7 +8,7 @@ import { LayoutDashboard, Search, Activity, CreditCard, Settings, LogOut, UserCi
 import { useRouter } from '@/i18n/routing';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchCurrentUserProfile, logout } from '@/lib/store/slices/userSlice';
-import { fetchSubscriptionSnapshot } from '@/lib/store/slices/accountSlice';
+import { hasSubscriptionAccess } from '@/lib/billingAccess';
 
 const PLACEHOLDER_NAMES = new Set(['user', 'new user', 'unknown user']);
 
@@ -27,10 +27,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const user = useAppSelector((state) => state.user);
   const subscriptionSnapshot = useAppSelector((state) => state.account.subscription.data);
   const subscriptionLoading = useAppSelector((state) => state.account.subscription.loading);
-  const hasEffectivePlan =
-    !!subscriptionSnapshot?.subscription &&
-    ((subscriptionSnapshot.subscription.hasAccess === true) ||
-      ['active', 'trialing', 'past_due'].includes(subscriptionSnapshot.subscription.status || ''));
+  const hasEffectivePlan = hasSubscriptionAccess(subscriptionSnapshot);
   const planInfo = {
     name: hasEffectivePlan
       ? (subscriptionSnapshot?.plan?.name ?? '--')
@@ -75,10 +72,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     dispatch(logout());
     router.replace('/login?loggedOut=1');
   };
-
-  useEffect(() => {
-    dispatch(fetchSubscriptionSnapshot());
-  }, [dispatch]);
 
   useEffect(() => {
     if (!user.token) {
