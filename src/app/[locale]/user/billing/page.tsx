@@ -1,16 +1,22 @@
 ﻿'use client';
 
 import type { CheckoutOpenOptions, Paddle, PaddleEventData } from '@paddle/paddle-js';
-import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, Crown } from 'lucide-react';
 import { apiClient, getApiErrorMessage } from '@/lib/api';
+import {
+  getSignupOfferLabel,
+  hasSubscriptionAccess,
+  isSignupOfferConfigured,
+  isSignupOfferMissingPrice,
+  type SignupOffer,
+} from '@/lib/billingAccess';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
   cancelPlanSubscription,
   fetchBillingPageData,
-  pauseSubscription,
   resumeAutoRenew,
   resumeSubscription,
   upgradeSubscription,
@@ -51,14 +57,16 @@ interface BillingSnapshot {
     pendingPlan?: {
       tier: PlanTier;
       name: string;
-      billingCycle: BillingCycle;
+      billingCycle?: BillingCycle;
+      cycle?: BillingCycle;
       effectiveAt?: string | null;
     } | null;
   } | null;
-  plan: Plan;
+  signupOffer?: SignupOffer | null;
+  plan?: Plan | null;
   credits?: number;
   alertsRemaining?: number;
-  usage: {
+  usage?: {
     imagesUsedThisMonth: number;
     imageUploadLimit: number;
     alertLimit: number;
@@ -99,9 +107,33 @@ const getPaymentErrorMessage = (error: unknown, fallback: string) => {
   return getApiErrorMessage(error, fallback);
 };
 
+const delay = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+const getCheckoutResponse = (value: unknown) => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  if ('response' in value) {
+    return (value as { response?: { data?: unknown } }).response?.data ?? null;
+  }
+
+  return value;
+};
+
+const isPriceConfigurationError = (value: unknown) => {
+  const data = getCheckoutResponse(value);
+  return !!(
+    data &&
+    typeof data === 'object' &&
+    (('success' in data && (data as { success?: unknown }).success === false) ||
+      ('priceConfigured' in data && (data as { priceConfigured?: unknown }).priceConfigured === false))
+  );
+};
+
 export default function BillingPage() {
   const dispatch = useAppDispatch();
-  const { plans, loading, error, savingPlan, cancelLoading, pauseLoading, resumeLoading, resumeAutoRenewLoading, upgradeLoading, countryCode } = useAppSelector((state) => state.account.billing);
+  const { plans, loading, error, savingPlan, cancelLoading, resumeLoading, resumeAutoRenewLoading, upgradeLoading, countryCode } = useAppSelector((state) => state.account.billing);
   const snapshot = useAppSelector((state) => state.account.subscription.data) as BillingSnapshot | null;
   const t = useTranslations('UserPanel.billing');
   const locale = useLocale();
@@ -116,7 +148,8 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const paddleRef = useRef<Paddle | null>(null);
   const paddlePromiseRef = useRef<Promise<Paddle> | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkoutTransactionIdRef = useRef<string | null>(null);
+  const verifyingCheckoutRef = useRef(false);
   const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isKoreanLocale = locale === 'kr';
@@ -165,52 +198,66 @@ export default function BillingPage() {
     };
   }, []);
 
-  const handlePaddleEvent = useCallback((event: PaddleEventData) => {
-    if (event.name === 'checkout.completed') {
-      setCheckoutPlan(null);
-      setCheckoutError(null);
+  const verifyCheckout = useCallback(async (transactionId: string) => {
+    if (verifyingCheckoutRef.current) {
+      return;
+    }
 
-      // Immediately sync from Paddle API in case webhook delivery is delayed.
-      // This force-writes the paid subscription state to the DB so the UI
-      // doesn't remain stuck on the trial badge.
-      void (async () => {
-        try {
-          await apiClient.post('/billing/sync', {});
-        } catch {
-          // Non-fatal — polling below will still refresh via the standard endpoint.
+    verifyingCheckoutRef.current = true;
+    setCheckoutError(null);
+
+    try {
+      try {
+        await apiClient.post('/billing/sync', { transactionId });
+      } catch (syncError) {
+        console.error('Paddle checkout sync failed', { transactionId, error: syncError });
+      }
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const result = await dispatch(fetchBillingPageData()).unwrap();
+
+        if (hasSubscriptionAccess(result.snapshot)) {
+          showPopup('success', t('checkoutVerified'));
+          return;
         }
-        // Poll until subscription is active and Paddle-managed
-        let attempts = 0;
-        const poll = () => {
-          if (attempts >= 12) return;
-          attempts++;
-          pollTimerRef.current = setTimeout(async () => {
-            const result = await dispatch(fetchBillingPageData());
-            const sub = (result as { payload?: { snapshot?: BillingSnapshot | null } }).payload?.snapshot?.subscription;
-            if (sub?.status === 'active' && sub?.paddleManaged) return;
-            poll();
-          }, 2500);
-        };
-        poll();
-        startTransition(() => { void dispatch(fetchBillingPageData()); });
-      })();
+
+        if (attempt < 4) {
+          await delay(1500);
+        }
+      }
+
+      setCheckoutError(t('verificationPending'));
+    } catch (err) {
+      setCheckoutError(getPaymentErrorMessage(err, t('verificationFailed')));
+    } finally {
+      verifyingCheckoutRef.current = false;
+      setCheckoutPlan(null);
+    }
+  }, [dispatch, showPopup, t]);
+
+  const handlePaddleEvent = useCallback((event: PaddleEventData) => {
+    if (event.name === 'checkout.completed' || event.name === 'checkout.closed') {
+      const transactionId = checkoutTransactionIdRef.current;
+      if (transactionId) {
+        void verifyCheckout(transactionId);
+      } else {
+        setCheckoutPlan(null);
+      }
       return;
     }
 
     if (event.name === 'checkout.error' || event.name === 'checkout.failed') {
-      setCheckoutPlan(null);      setCheckoutError(t('checkoutError'));
-      return;
-    }
-
-    if (event.name === 'checkout.closed') {
       setCheckoutPlan(null);
+      setCheckoutError(t('checkoutError'));
     }
-  }, [dispatch, t]);
+  }, [t, verifyCheckout]);
 
   const currentSubscription = snapshot?.subscription ?? null;
-  const hasEffectivePlan =
-    !!currentSubscription &&
-    (currentSubscription.hasAccess === true || ['active', 'trialing', 'past_due'].includes(currentSubscription.status));
+  const hasEffectivePlan = hasSubscriptionAccess(snapshot);
+  const signupOffer = snapshot?.signupOffer ?? null;
+  const canActivateTrial = isSignupOfferConfigured(signupOffer);
+  const trialPriceMissing = isSignupOfferMissingPrice(signupOffer);
+  const signupOfferLabel = getSignupOfferLabel(signupOffer);
   const currentTier: PlanTier | null = hasEffectivePlan ? (snapshot?.plan?.tier ?? null) : null;
   const currentPlanName = hasEffectivePlan ? (snapshot?.plan?.name ?? '--') : '--';
   // Paid active status MUST take priority over trial flags.
@@ -224,6 +271,7 @@ export default function BillingPage() {
   const isPaddleActive = snapshot?.subscription?.status === 'active' && snapshot?.subscription?.paddleManaged;
   const pendingPlan = snapshot?.subscription?.pendingPlan ?? null;
   const hasPendingDowngrade = !!pendingPlan;
+  const pendingPlanCycle = pendingPlan?.billingCycle ?? pendingPlan?.cycle ?? null;
   const cancelEffectiveDate = snapshot?.subscription?.cancelDate
     ? new Date(snapshot.subscription.cancelDate)
     : null;
@@ -279,6 +327,14 @@ export default function BillingPage() {
   const getPlanCtaLabel = (planTier: PlanTier, isWorking: boolean) => {
     if (isWorking) return isKoreanLocale ? '처리 중...' : 'Processing...';
 
+    if (!hasEffectivePlan && trialPriceMissing) {
+      return t('contactSupport');
+    }
+
+    if (!hasEffectivePlan && canActivateTrial && planTier === 'pro') {
+      return t('activateTrialCta', { trialLabel: signupOfferLabel });
+    }
+
     if (isProTrial) {
       if (planTier === 'pro') return isKoreanLocale ? '지금 구독' : 'Subscribe now';
       if (planTier === 'premium') return isKoreanLocale ? 'Premium으로 업그레이드' : 'Upgrade to Premium';
@@ -304,6 +360,12 @@ export default function BillingPage() {
   };
 
   const handlePlanAction = async (tier: PlanTier) => {
+    if (trialPriceMissing && !hasEffectivePlan) {
+      setCheckoutError(t('trialSupportFallback'));
+      console.error('Trial checkout price is not configured', { signupOffer });
+      return;
+    }
+
     if (isPaddleActive) {
       setCheckoutError(null);
       try {
@@ -314,23 +376,31 @@ export default function BillingPage() {
           ? currentSubscription?.billingCycle ?? cycle
           : cycle;
 
-        await dispatch(upgradeSubscription({ tier: targetTier, billingCycle: targetCycle })).unwrap();
+        const updateResult = await dispatch(upgradeSubscription({ tier: targetTier, billingCycle: targetCycle })).unwrap();
         const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
         if (hasPendingDowngrade && currentTier && tier === currentTier) {
-          showPopup('success', isKoreanLocale ? '예약된 다운그레이드가 취소되었습니다.' : 'Scheduled downgrade has been canceled.');
+          showPopup('success', t('scheduledDowngradeCanceled'));
+        } else if (updateResult.snapshot?.subscription?.pendingPlan) {
+          const nextPendingPlan = updateResult.snapshot.subscription.pendingPlan;
+          const effectiveDate = nextPendingPlan.effectiveAt
+            ? new Date(nextPendingPlan.effectiveAt).toLocaleDateString()
+            : t('currentPeriodEnd');
+          showPopup('success', t('downgradeScheduledToast', { plan: nextPendingPlan.name, date: effectiveDate }));
+        } else if (typeof updateResult.unusedDaysAdded === 'number' && updateResult.unusedDaysAdded > 0) {
+          showPopup('success', t('planUpdatedWithCarryover', { plan: planName, days: updateResult.unusedDaysAdded }));
         } else {
-          showPopup('success', `Your plan was updated to ${planName}.`);
+          showPopup('success', t('planUpdated', { plan: planName }));
         }
       } catch (err) {
         showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
       }
     } else {
-      await subscribe(tier, { withTrial: !isProTrial });
+      await subscribe(tier, { withTrial: canActivateTrial && tier === 'pro' });
     }
   };
 
   const usageLabel = useMemo(() => {
-    if (!snapshot) return '';
+    if (!snapshot?.usage) return '';
     const used = snapshot.usage.imagesUsedThisMonth;
     const limit = snapshot.usage.imageUploadLimit;
     if (!limit) return `${used} uploads this month (unlimited plan)`;
@@ -338,7 +408,7 @@ export default function BillingPage() {
   }, [snapshot]);
 
   const searchUsage = useMemo(() => {
-    if (!snapshot) {
+    if (!snapshot?.usage) {
       return { used: 0, limit: 0, remaining: 0, unlimited: false };
     }
 
@@ -359,7 +429,7 @@ export default function BillingPage() {
     }
 
     if (!paddleClientToken) {
-      throw new Error('Paddle checkout is not configured. Add NEXT_PUBLIC_PADDLE_CLIENT_TOKEN to enable paid subscriptions.');
+      return null;
     }
 
     if (!paddlePromiseRef.current) {
@@ -391,12 +461,17 @@ export default function BillingPage() {
     setCheckoutPlan(tier);
 
     try {
-      const paddle = await ensurePaddle();
+      const billingCycle = options?.withTrial ? 'monthly' : cycle;
       const response = await apiClient.post('/billing/paddle/checkout', {
-        tier,
-        billingCycle: cycle,
-        withTrial: options?.withTrial,
+        tier: options?.withTrial ? 'pro' : tier,
+        billingCycle,
+        withTrial: options?.withTrial === true,
       });
+
+      if (response.data?.success === false || response.data?.priceConfigured === false) {
+        console.error('Paddle checkout price is not configured', response.data);
+        throw new Error(t('trialSupportFallback'));
+      }
 
       const transactionId: string | undefined = response.data?.transactionId;
       const checkoutUrl: string | undefined = response.data?.checkoutUrl;
@@ -404,25 +479,34 @@ export default function BillingPage() {
         throw new Error('Billing API did not return a transaction ID.');
       }
 
-      // Always prefer transactionId for overlay — using the URL causes "bad request"
-      const openPayload = transactionId
-        ? { transactionId }
-        : { url: checkoutUrl! };
+      checkoutTransactionIdRef.current = transactionId ?? null;
 
-      paddle.Checkout.open({
-        ...openPayload,
-        settings: {
-          displayMode: 'overlay',
-          theme: 'light',
-          successUrl: typeof window !== 'undefined' ? window.location.href : undefined,
-        },
-      } as unknown as CheckoutOpenOptions);
+      const paddle = await ensurePaddle();
+
+      if (paddle && transactionId) {
+        paddle.Checkout.open({
+          transactionId,
+          settings: {
+            displayMode: 'overlay',
+            theme: 'light',
+            successUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          },
+        } as unknown as CheckoutOpenOptions);
+      } else if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error('Paddle checkout is not configured and no checkout URL was returned.');
+      }
+
       const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
-      showPopup('info', t('checkoutOpened', { plan: planName }));
+      showPopup('info', t('checkoutOpened', { plan: options?.withTrial ? signupOfferLabel : planName }));
     } catch (paymentError) {
       setCheckoutPlan(null);
-      setCheckoutError(getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.'));
-      showPopup('error', getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.'));
+      const message = isPriceConfigurationError(paymentError)
+        ? t('trialSupportFallback')
+        : getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.');
+      setCheckoutError(message);
+      showPopup('error', message);
     }
   };
 
@@ -432,15 +516,6 @@ export default function BillingPage() {
       showPopup('success', t('subscriptionCancelled'));
     } catch (err) {
       showPopup('error', getPaymentErrorMessage(err, 'Unable to cancel subscription.'));
-    }
-  };
-
-  const handlePause = async () => {
-    try {
-      await dispatch(pauseSubscription()).unwrap();
-      showPopup('success', t('subscriptionPausedSuccess'));
-    } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to pause subscription.'));
     }
   };
 
@@ -501,8 +576,6 @@ export default function BillingPage() {
     }
   };
 
-  // Cleanup polling on unmount
-  useEffect(() => () => { if (pollTimerRef.current) clearTimeout(pollTimerRef.current); }, []);
   useEffect(() => () => { if (popupTimerRef.current) clearTimeout(popupTimerRef.current); }, []);
 
   if (loading) {
@@ -544,8 +617,21 @@ export default function BillingPage() {
         </p>
       </div>
 
+      {!hasEffectivePlan && canActivateTrial && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          <span className="font-semibold">{t('trialOfferTitle', { trialLabel: signupOfferLabel })}</span>{' '}
+          {t('trialOfferCopy', { trialLabel: signupOfferLabel })}
+        </div>
+      )}
+
+      {!hasEffectivePlan && trialPriceMissing && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {t('trialSupportFallback')}
+        </div>
+      )}
+
       {/* Trial / referral banner */}
-      {snapshot?.subscription && (snapshot.subscription.isTrial || snapshot.subscription.status === 'trialing') && (
+      {hasEffectivePlan && snapshot?.subscription && (snapshot.subscription.isTrial || snapshot.subscription.status === 'trialing') && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <span className="font-semibold">
             {snapshot.subscription.trialDaysLeft != null
@@ -621,8 +707,8 @@ export default function BillingPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
           <span>
             {isKoreanLocale
-              ? `다운그레이드 예약됨: ${pendingPlan?.name} (${pendingPlan?.billingCycle === 'annual' ? '연간' : '월간'})`
-              : `Downgrade scheduled: ${pendingPlan?.name} (${pendingPlan?.billingCycle})`}
+              ? `다운그레이드 예약됨: ${pendingPlan?.name} (${pendingPlanCycle === 'annual' ? '연간' : '월간'})`
+              : `Downgrade scheduled: ${pendingPlan?.name} (${pendingPlanCycle ?? 'monthly'})`}
             {pendingPlan?.effectiveAt && (
               <> {isKoreanLocale ? `적용일 ${new Date(pendingPlan.effectiveAt).toLocaleDateString()}` : `on ${new Date(pendingPlan.effectiveAt).toLocaleDateString()}`}</>
             )}
@@ -654,7 +740,7 @@ export default function BillingPage() {
         <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{checkoutError}</div>
       )}
 
-      {!paddleClientToken && (
+      {!paddleClientToken && !hasEffectivePlan && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {t('paddleNotConfigured')}
         </div>
@@ -680,7 +766,7 @@ export default function BillingPage() {
             )}
 
             {/* Upload quota progress bar */}
-            {hasEffectivePlan && snapshot && snapshot.usage.imageUploadLimit > 0 && (() => {
+            {hasEffectivePlan && snapshot?.usage && snapshot.usage.imageUploadLimit > 0 && (() => {
               const used = searchUsage.used;
               const total = searchUsage.limit;
               const pct = Math.min(100, Math.max(0, Math.round((used / total) * 100)));
@@ -698,7 +784,7 @@ export default function BillingPage() {
             })()}
 
             {/* Alerts quota — unlimited indicator */}
-            {hasEffectivePlan && snapshot && snapshot.usage.alertLimit === 0 && (
+            {hasEffectivePlan && snapshot?.usage && snapshot.usage.alertLimit === 0 && (
               <div className="mt-3 max-w-xs">
                 <div className="mb-1 flex justify-between text-[10px] text-gray-400">
                   <span>{t('alerts')}</span>
@@ -790,9 +876,9 @@ export default function BillingPage() {
             !currentSubscription.isTrialing;
           const isCurrentTrialPlan = isCurrent && plan.tier === 'pro' && isProTrial;
           const isWorking = savingPlan === plan.tier || checkoutPlan === plan.tier || upgradeLoading === plan.tier;
-          const isPaddleUnavailable = !paddleClientToken && !isPaddleActive;
+          const isCheckoutBlocked = trialPriceMissing && !hasEffectivePlan;
           const isPendingTargetPlan = !!pendingPlan && pendingPlan.tier === plan.tier;
-          const isDisabled = isWorking || isPaddleUnavailable || (isCurrentPaidPlan && !hasPendingDowngrade) || (isPendingTargetPlan && hasPendingDowngrade);
+          const isDisabled = isWorking || isCheckoutBlocked || (isCurrentPaidPlan && !hasPendingDowngrade) || (isPendingTargetPlan && hasPendingDowngrade);
           const planButtonClass = [
             'mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
             isCurrentPaidPlan

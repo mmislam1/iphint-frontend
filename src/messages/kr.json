@@ -218,10 +218,10 @@
       "settings": "설정",
       "currentPlan": "현재 요금제",
       "loadingPlan": "불러오는 중...",
-      "premiumTrial": "프리미엄 체험판: {count}{unit} 남음",
+      "premiumTrial": "Pro trial: {count}{unit} left",
       "day": "일",
       "days": "일",
-      "upgradeBeforeTrialEnds": "체험판이 끝나기 전에 업그레이드",
+      "upgradeBeforeTrialEnds": "Choose a plan before trial ends",
       "renewPlan": "요금제 갱신",
       "buyNow": "지금 구매",
       "upgradePlan": "요금제 업그레이드",
@@ -365,7 +365,8 @@
     "passwordPlaceholder": "비밀번호를 입력해주세요",
     "hasAccountText": "이미 계정이 있으신가요?",
     "hasAccountLink": "로그인",
-    "submitSignup": "7일 무료로 시작하기",
+    "trialActivationCopy": "Create your account, then activate your {days}-day Pro trial through Paddle.",
+    "submitSignup": "Create account",
     "loginTitle": "계정 로그인",
     "continueWithGoogle": "Google 계정으로 로그인",
     "emailOnlyLabel": "이메일",
@@ -427,7 +428,7 @@
     "verificationRequestPage": {
       "eyebrow": "계정 설정",
       "title": "이메일 인증",
-      "description": "받은편지함을 확인하고 계정을 활성화해 체험판을 이용하세요.",
+      "description": "Check your inbox to verify your account. After logging in, activate your Pro trial through Paddle.",
       "emailLabel": "이메일",
       "emailPlaceholder": "이메일을 입력해 주세요",
       "submit": "인증 메일 다시 보내기",
@@ -1151,11 +1152,11 @@
     },
     "referral": {
       "title": "추천 코드가 있으신가요?",
-      "description": "회원가입 시 코드를 입력하면 즉시 무료 체험이 시작됩니다.",
+      "description": "Create your account, then activate your 30-day Pro trial through Paddle.",
       "steps": [
         "코드 받기",
         "가입 시 입력",
-        "1개월 무료",
+        "Activate Pro Trial",
         "플랜 선택"
       ]
     }
@@ -1198,11 +1199,11 @@
       "copy": "복사",
       "copied": "복사 완료!",
       "codeLabel": "코드:",
-      "codeNote": "내 링크로 가입한 신규 사용자는 프리미엄 1개월 무료 혜택을 받습니다.",
+      "codeNote": "Create your account, then activate your 30-day Pro trial through Paddle.",
       "referralStatusTitle": "추천 현황",
       "referralStatusNote": "추천 링크는 항상 활성 상태입니다. 완료된 추천은 지속적으로 집계됩니다.",
       "howItWorksTitle": "이용 방법",
-      "step1": "추천 링크를 공유하세요. 내 링크로 가입한 친구는 프리미엄 1개월 무료 혜택을 받습니다.",
+      "step1": "Share your referral link. Friends can create an account, then activate a 30-day Pro trial through Paddle.",
       "step2": "신규 사용자가 처음 로그인해야 추천이 '완료'됩니다.",
       "step3": "5명 완료 추천으로 PDF & 보고서 이용권을 영구적으로 잠금 해제하세요."
     },
@@ -1283,9 +1284,28 @@
       "allMarkedRead": "모든 알림이 읽음 처리되었습니다.",
       "loadFailed": "설정을 불러오지 못했습니다"
     },
+    "accessGate": {
+      "title": "Activate access",
+      "subtitle": "Paddle checkout is required before the app unlocks.",
+      "checkingAccess": "Checking subscription access...",
+      "trialCopy": "Create your account, then activate your {trialLabel} through Paddle.",
+      "activateTrial": "Activate {trialLabel}",
+      "verifying": "Verifying checkout...",
+      "supportFallback": "Trial checkout is not fully configured yet. Please contact support and we will help you activate your Pro trial.",
+      "subscribeCopy": "No active trial or subscription is available for this account. Choose a plan to continue.",
+      "viewPlans": "View plans",
+      "checkoutError": "Paddle could not complete checkout. Please try again.",
+      "verificationPending": "Checkout closed, but access is not confirmed yet. Please wait a moment and try again.",
+      "verificationFailed": "Could not verify checkout right now. Please refresh and try again."
+    },
     "billing": {
       "title": "결제",
       "description": "요금제를 관리하고 Paddle을 통해 안전하게 결제하세요. 유료 요금제는 여기서 취소할 때까지 자동으로 갱신됩니다.",
+      "trialOfferTitle": "{trialLabel} available.",
+      "trialOfferCopy": "Create your account, then activate your {trialLabel} through Paddle.",
+      "activateTrialCta": "Activate {trialLabel}",
+      "trialSupportFallback": "Trial checkout is not fully configured yet. Please contact support and we will help you activate your Pro trial.",
+      "contactSupport": "Contact support",
       "trialActive": "Pro 체험판이 활성 상태입니다.",
       "trialDaysLeft": "Pro 체험판: {days}{unit} 남음.",
       "trialConvert": "지금 구독하여 즉시 유료 Pro 구독으로 전환하세요.",
@@ -1349,12 +1369,20 @@
       "statusHeader": "상태",
       "transactionHeader": "거래",
       "checkoutOpened": "{plan} 결제가 시작되었습니다. 결제를 완료하여 활성화하세요.",
+      "checkoutVerified": "Checkout verified. Your access is active.",
+      "verificationPending": "Checkout closed, but access is not confirmed yet. Please wait a moment and try again.",
+      "verificationFailed": "Could not verify checkout right now. Please refresh and try again.",
+      "currentPeriodEnd": "the current billing period end",
+      "scheduledDowngradeCanceled": "Scheduled downgrade has been canceled.",
+      "downgradeScheduledToast": "Downgrade to {plan} is scheduled for {date}.",
+      "planUpdated": "Your plan was updated to {plan}.",
+      "planUpdatedWithCarryover": "Your plan was updated to {plan}. {days} unused day(s) were carried over.",
       "subscriptionCancelled": "구독이 해지되었습니다.",
       "subscriptionPausedSuccess": "구독이 이번 결제 주기 종료 시 일시 중지됩니다.",
       "subscriptionResumed": "구독이 재개되었습니다.",
       "autoRenewResumed": "자동 갱신이 다시 활성화되었습니다.",
       "checkoutError": "Paddle에서 결제를 완료할 수 없습니다. 다시 시도해 주세요.",
-      "paddleNotConfigured": "이 화면의 유료 요금제는 Paddle 결제를 사용합니다. 유료 구독을 활성화하려면 NEXT_PUBLIC_PADDLE_CLIENT_TOKEN을 설정하세요."
+      "paddleNotConfigured": "Paddle overlay checkout is unavailable. If checkout cannot open, please contact support."
     }
   }
 }

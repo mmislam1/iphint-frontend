@@ -31,10 +31,10 @@
       "settings": "Settings",
       "currentPlan": "Current plan",
       "loadingPlan": "Loading...",
-      "premiumTrial": "Premium trial: {count} {unit} left",
+      "premiumTrial": "Pro trial: {count} {unit} left",
       "day": "day",
       "days": "days",
-      "upgradeBeforeTrialEnds": "Upgrade before trial ends",
+      "upgradeBeforeTrialEnds": "Choose a plan before trial ends",
       "renewPlan": "Renew plan",
       "buyNow": "Buy now",
       "upgradePlan": "Upgrade plan",
@@ -178,7 +178,8 @@
     "passwordPlaceholder": "Create a password",
     "hasAccountText": "Already have an account?",
     "hasAccountLink": "Log in",
-    "submitSignup": "Start your 7-day free trial",
+    "trialActivationCopy": "Create your account, then activate your {days}-day Pro trial through Paddle.",
+    "submitSignup": "Create account",
     "loginTitle": "Log in to your account",
     "continueWithGoogle": "Continue with Google",
     "emailOnlyLabel": "Email",
@@ -239,7 +240,7 @@
     "verificationRequestPage": {
       "eyebrow": "Account setup",
       "title": "Verify your email",
-      "description": "Check your inbox and activate your account to use your trial.",
+      "description": "Check your inbox to verify your account. After logging in, activate your Pro trial through Paddle.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "submit": "Resend verification email",
@@ -1116,8 +1117,8 @@
     },
     "referral": {
       "title": "Do you have a referral code?",
-      "description": "Enter the code during sign-up to get an instant free trial.",
-      "steps": ["Get Code", "Enter during Sign-Up", "1 Month Free", "Select Plan"]
+      "description": "Create your account, then activate your 30-day Pro trial through Paddle.",
+      "steps": ["Get Code", "Create Account", "Activate Pro Trial", "Select Plan"]
     }
   },
   "UserPanel": {
@@ -1158,11 +1159,11 @@
       "copy": "Copy",
       "copied": "Copied!",
       "codeLabel": "Code:",
-      "codeNote": "New users who sign up with your link get 1 month free Premium.",
+      "codeNote": "Create your account, then activate your 30-day Pro trial through Paddle.",
       "referralStatusTitle": "Referral Status",
       "referralStatusNote": "Referral link is always active. Completed referrals are tracked continuously.",
       "howItWorksTitle": "How It Works",
-      "step1": "Share your referral link. Friends who sign up using your link get 1 month free Premium.",
+      "step1": "Share your referral link. Friends can create an account, then activate a 30-day Pro trial through Paddle.",
       "step2": "A referral is \"completed\" only when the new user logs in for the first time.",
       "step3": "Get 5 completed referrals to permanently unlock PDF & Reports access."
     },
@@ -1243,9 +1244,28 @@
       "allMarkedRead": "All notifications marked as read.",
       "loadFailed": "Failed to load settings"
     },
+    "accessGate": {
+      "title": "Activate access",
+      "subtitle": "Paddle checkout is required before the app unlocks.",
+      "checkingAccess": "Checking subscription access...",
+      "trialCopy": "Create your account, then activate your {trialLabel} through Paddle.",
+      "activateTrial": "Activate {trialLabel}",
+      "verifying": "Verifying checkout...",
+      "supportFallback": "Trial checkout is not fully configured yet. Please contact support and we will help you activate your Pro trial.",
+      "subscribeCopy": "No active trial or subscription is available for this account. Choose a plan to continue.",
+      "viewPlans": "View plans",
+      "checkoutError": "Paddle could not complete checkout. Please try again.",
+      "verificationPending": "Checkout closed, but access is not confirmed yet. Please wait a moment and try again.",
+      "verificationFailed": "Could not verify checkout right now. Please refresh and try again."
+    },
     "billing": {
       "title": "Billing",
       "description": "Manage your plan and check out securely with Paddle. Paid plans renew automatically until you cancel them here.",
+      "trialOfferTitle": "{trialLabel} available.",
+      "trialOfferCopy": "Create your account, then activate your {trialLabel} through Paddle.",
+      "activateTrialCta": "Activate {trialLabel}",
+      "trialSupportFallback": "Trial checkout is not fully configured yet. Please contact support and we will help you activate your Pro trial.",
+      "contactSupport": "Contact support",
       "trialActive": "Pro Trial is active.",
       "trialDaysLeft": "Pro Trial: {days} {unit} remaining.",
       "trialConvert": "Subscribe now to convert to a paid Pro subscription immediately.",
@@ -1309,12 +1329,20 @@
       "statusHeader": "Status",
       "transactionHeader": "Transaction",
       "checkoutOpened": "Checkout opened for {plan}. Complete payment to activate it.",
+      "checkoutVerified": "Checkout verified. Your access is active.",
+      "verificationPending": "Checkout closed, but access is not confirmed yet. Please wait a moment and try again.",
+      "verificationFailed": "Could not verify checkout right now. Please refresh and try again.",
+      "currentPeriodEnd": "the current billing period end",
+      "scheduledDowngradeCanceled": "Scheduled downgrade has been canceled.",
+      "downgradeScheduledToast": "Downgrade to {plan} is scheduled for {date}.",
+      "planUpdated": "Your plan was updated to {plan}.",
+      "planUpdatedWithCarryover": "Your plan was updated to {plan}. {days} unused day(s) were carried over.",
       "subscriptionCancelled": "Your subscription was cancelled.",
       "subscriptionPausedSuccess": "Your subscription will pause at the end of this billing period.",
       "subscriptionResumed": "Your subscription has been resumed.",
       "autoRenewResumed": "Auto-renew has been turned back on.",
       "checkoutError": "Paddle could not complete the payment. Please try again.",
-      "paddleNotConfigured": "Paid plans on this screen use Paddle checkout. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN to enable paid subscriptions."
+      "paddleNotConfigured": "Paddle overlay checkout is unavailable. If checkout cannot open, please contact support."
     }
   }
 }
