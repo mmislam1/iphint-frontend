@@ -1,0 +1,1360 @@
+{
+  "header": {
+    "pricing": "가격",
+    "service": "서비스",
+    "contactUs": "문의하기",
+    "getStarted": "지금시작하기",
+    "signIn": "로그인",
+    "openMenu": "메뉴 열기",
+    "closeMenu": "메뉴 닫기",
+    "selectLanguageAria": "언어 선택",
+    "homeAria": "IPHINT 홈",
+    "navigationAria": "메인 내비게이션"
+  },
+  "Footer": {
+    "companyHeading": "투스타",
+    "policyHeading": "이용약관 및 정책",
+    "links": {
+      "research": "연구",
+      "api": "API",
+      "about": "소개",
+      "privacyPolicy": "개인정보 보호 정책",
+      "termsOfService": "이용약관",
+      "usagePolicy": "사용정책",
+      "refundPolicy": "환불 정책"
+    },
+    "copyright": "©2026 UTRBOX. All Rights Reserved.",
+    "languages": {
+      "kr": "한국어",
+      "en": "영어"
+    },
+    "selectLanguageAria": "언어 선택",
+    "homeAria": "IPHINT 홈"
+  },
+  "Landing": {
+    "section1": {
+      "title": "당신의 아이디어와\n브랜드의 성장을 보호하세요.",
+      "subtitle": "당신의 비주얼 자산을 쉬지않고 추적하여 알려드립니다.",
+      "description": "단순한 데이터 나열은 의미가 없습니다. 유출 위험이 높은 글로벌 핵심 사이트를 우선 정밀 탐지하여, 당신의 권리와 직결된 실질적 정보만 선별 보고합니다.",
+      "primaryCta": "무료 플랜 시작",
+      "secondaryCta": "세일즈 문의",
+      "imageAlt": "히어로 일러스트"
+    },
+    "section2": {
+      "title": "규모에 상관없이,\n누구나 쉽게 보호받을 수 있는 보안 서비스",
+      "features": {
+        "searchEngines": {
+          "title": "글로벌 검색 엔진",
+          "description": "주요 엔진별 데이터 기반 \n이미지 탐지 및 분석"
+        },
+        "socialMedia": {
+          "title": "소셜네트워크",
+          "description": "SNS 내 이미지 유사도 분석을 통한\n무단 도용 탐지"
+        },
+        "harmfulSites": {
+          "title": "유해 사이트",
+          "description": "DB화된 50,000개 이상의 \n 불법 유통지 추적"
+        },
+        "streamingSites": {
+          "title": "스트리밍 사이트",
+          "description": "주요 동영상 플랫폼 및 미승인 스트리밍 채널\n정밀 모니터링"
+        },
+        "deepWeb": {
+          "title": "딥웹",
+          "description": "폐쇄형 커뮤니티 및 아카이브 사이트 내 \n유출 흔적 추적"
+        }
+      }
+    },
+    "section3": {
+      "title": "모니터링을 시작해보세요",
+      "description": "웹 전반의 유출 여부를 확인하고 결과에 맞춰 적절한 조치를 취하세요!",
+      "features": {
+        "deepWebDetection": {
+          "title": "글로벌 엔진 통합 검색",
+          "description": "국내 포털이 놓치기 쉬운 해외 유출 경로를 정밀하게  방대한 글로벌 데이터를 활용하여 탐지합니다."
+        },
+        "highAccuracy": {
+          "title": "듀얼 AI 교차 식별",
+          "description": "서로 다른 알고리즘을 가진 두 엔진이 이미지를 분석합니다. 변형되거나 훼손된 이미지도 높은 정확도로 식별합니다."
+        },
+        "alertService": {
+          "title": "탐지 알림 서비스",
+          "description": "새로운 일치 항목이 발견되면 즉시 알림을 발송합니다. 번거로운 수동 검색 없이 유출 상황에 빠르게 대응하세요."
+        },
+        "secureStorage": {
+          "title": "보안 표준 기반 안전 보관",
+          "description": "모든 데이터는 암호화 기술로 안전하게 관리됩니다. 사용자의 저작권과 개인정보 보호를 최우선으로 합니다."
+        }
+      },
+      "footerQuestion": "엔터프라이즈급 데이터 레지던시가 필요하신가요?",
+      "footerCta": "세일즈 문의"
+    },
+    "section4": {
+      "title": "크리에이터와 브랜드",
+      "description": "우리는 전 세계 인플루언서, 아티스트, 크리에이터와 함께 성장합니다. IPHINT를 사용하는 팀들이 만든 성과를 확인해보세요.",
+      "items": {
+        "artist": {
+          "title": "아티스트",
+          "heading": "드로잉, 일러스트, 웹툰, 캐릭터, 디지털 아트",
+          "description": "매일 수천 개 플랫폼을 대신 모니터링하고, 작품이 어떻게 사용되고 있는지 보고서로 제공합니다."
+        },
+        "model": {
+          "title": "모델",
+          "heading": "패션, 사진, 런웨이, 커머셜",
+          "description": "글로벌 캠페인과 디지털 플랫폼 전반에서 당신의 초상권과 모델 포트폴리오를 보호하세요."
+        },
+        "creator": {
+          "title": "크리에이터",
+          "heading": "영상, 음악, 팟캐스트, 스트리밍",
+          "description": "당신의 콘텐츠가 온전히 당신의 것이 되도록 지키세요. 주요 미디어 플랫폼 전반에서 창작물을 추적합니다."
+        },
+        "ecommerce": {
+          "title": "이커머스",
+          "heading": "브랜드, 리테일, 온라인 스토어",
+          "description": "디지털 마켓플레이스에서 무단 사용으로부터 상품 이미지와 브랜드 자산을 보호하세요."
+        }
+      },
+      "viewSlide": "{title} 보기",
+      "goToSlide": "{index}번 슬라이드로 이동"
+    },
+    "section5": {
+      "title": "우리를 신뢰하는 이유",
+      "subtitle": "세계 각국의 인플루언서, 아티스트,크리에이터와 함께 성장합니다. 아이피힌트를 활용한 팀의 성과를 확인하세요",
+      "testimonials": {
+        "artist": {
+          "quote": "12시간 걸리던 모니터링을 30분으로 줄였습니다.",
+          "content": "제 그림을 훔쳐 자기 작품처럼 올리는 계정을 일일이 찾는 건 거의 불가능했습니다. 이 서비스 덕분에 진짜 안심할 수 있게 됐습니다.",
+          "author": "아티스트 (웹툰)",
+          "subtext": "30편 이상 연재 작품"
+        },
+        "ceo": {
+          "quote": "하루 4시간의 모니터링, 이제는 자동화되었습니다.",
+          "content": "포장만 바꿔 제 상품을 파는 쇼핑몰을 발견했고, 제 모델 사진과 상세 페이지를 훔쳐가는 사기 사이트가 늘어나 걱정이 컸습니다.",
+          "author": "의류 온라인 스토어 대표",
+          "subtext": "연 매출 1,100만 달러"
+        },
+        "influencer": {
+          "quote": "월 30시간씩 하던 검색 고생이 끝났습니다.",
+          "content": "불법 광고나 유령 계정에 제 사진이 쓰이는 걸 추적하느라 너무 많은 에너지를 쏟았습니다. 이렇게 합리적인 구독으로 해결할 수 있어 정말 만족합니다.",
+          "author": "인플루언서 & 모델",
+          "subtext": "팔로워 30만"
+        }
+      },
+      "swipeHint": "더 많은 사례를 보려면 스와이프하세요",
+      "scrollLeft": "후기를 왼쪽으로 스크롤",
+      "scrollRight": "후기를 오른쪽으로 스크롤"
+    },
+    "section6": {
+      "title": "블로그",
+      "posts": {
+        "1": {
+          "title": "콘텐츠 IP 도용, 침해는 찾지 못할 뿐, 도용되지 않은 작품은 거의 없습니다."
+        },
+        "2": {
+          "title": "AI 아트는 저작권이 없나요? 브랜드가 '공유 재산'이 되는 순간"
+        },
+        "3": {
+          "title": "한 이미지를 사용하고 합의 요구를 받았다면? '약탈적 소송' 함정에서 살아남기"
+        },
+        "4": {
+          "title": "당신의 브랜드가 표적이 될 때: Ali와 Temu에서의 K-콘텐츠 위기"
+        }
+      }
+    },
+    "section7": {
+      "title": "뉴스",
+      "articles": {
+        "1": {
+          "source": "뉴욕타임스",
+          "title": "위조 상품과의 글로벌 전쟁: IpHint(iphint.com) 활용 사례"
+        },
+        "2": {
+          "source": "뉴욕타임스",
+          "title": "글로벌 위조 상품 대응: IPHINT(iphint.com) 활용 사례"
+        },
+        "3": {
+          "source": "뉴욕타임스",
+          "title": "브랜드 보호를 위한 IpHint(iphint.com) 활용 이야기"
+        }
+      }
+    },
+    "section8": {
+      "titleBeforeBrand": "",
+      "brand": "IpHint ",
+      "titleAfterBrand": " 모니터링 지금 시작해보세요.",
+      "primaryCta": "지금 시작하기",
+      "secondaryCta": "세일즈 문의"
+    }
+  },
+  "Dashboard": {
+    "welcome": "환영합니다, {name}님",
+    "referralLink": "추천 링크 복사",
+    "copied": "복사 완료!",
+    "overview": "이미지 인텔리전스 개요입니다.",
+    "totalScans": "총 스캔 수",
+    "matchesFound": "발견된 일치 항목",
+    "activeMonitors": "활성 모니터",
+    "startScanTitle": "새 스캔 시작",
+    "startScanSub": "이미지를 업로드하여 역방향 검색 분석을 시작하세요",
+    "uploadBtn": "이미지 업로드",
+    "recentScans": "최근 스캔",
+    "viewAll": "모두 보기",
+    "matches": "일치",
+    "completed": "완료됨",
+    "processing": "처리 중",
+    "recentAlerts": "최근 알림",
+    "viewAllAlerts": "모든 알림 보기",
+    "quickActions": "빠른 작업",
+    "newScanAction": "새 스캔",
+    "viewMonitoringAction": "모니터링 보기",
+    "generateReportAction": "보고서 생성",
+    "sidebar": {
+      "dashboard": "대시보드",
+      "searches": "검색",
+      "monitoring": "모니터링",
+      "reports": "보고서",
+      "referral": "추천",
+      "billing": "결제",
+      "settings": "설정",
+      "currentPlan": "현재 요금제",
+      "loadingPlan": "불러오는 중...",
+      "premiumTrial": "프리미엄 체험판: {count}{unit} 남음",
+      "day": "일",
+      "days": "일",
+      "upgradeBeforeTrialEnds": "체험판이 끝나기 전에 업그레이드",
+      "renewPlan": "요금제 갱신",
+      "buyNow": "지금 구매",
+      "upgradePlan": "요금제 업그레이드",
+      "logout": "로그아웃",
+      "userFallback": "사용자",
+      "organizationFallback": "조직",
+      "closeOverlay": "사이드바 오버레이 닫기",
+      "goToDashboard": "대시보드로 이동"
+    },
+    "topbar": {
+      "pageTitles": {
+        "dashboard": "대시보드",
+        "monitoring": "모니터링",
+        "billing": "결제",
+        "settings": "설정",
+        "details": "상세",
+        "searches": "검색"
+      },
+      "openSidebar": "사이드바 열기",
+      "openNotifications": "알림 열기",
+      "notifications": "알림",
+      "markAllRead": "모두 읽음 처리",
+      "searchPlaceholder": "알림 검색",
+      "empty": "표시할 알림이 없습니다.",
+      "markAsRead": "읽음 처리",
+      "deleteNotification": "알림 삭제"
+    },
+    "scan": {
+      "title": "이미지 스캔",
+      "description": "이미지를 업로드하거나 URL을 붙여 넣어 웹 전반의 일치 항목을 검색하세요.",
+      "planUsage": "이번 달 요금제 사용량: {used}/{limit} 업로드",
+      "currentPlanFallback": "현재",
+      "dropzoneTitle": "클릭하거나 드래그하여 업로드",
+      "dropzoneHint": "PNG, JPG 또는 WEBP, 최대 10MB",
+      "or": "또는",
+      "urlPlaceholder": "이미지 URL을 붙여 넣으세요...",
+      "searchButton": "이미지 검색",
+      "searchSource": "검색 원본",
+      "clear": "지우기",
+      "errorTitle": "검색 요청에 실패했습니다",
+      "errorMessage": "검색 요청에 실패했습니다.",
+      "limitTitle": "월간 업로드 한도에 도달했습니다",
+      "limitMessage": "{planName} 요금제의 월간 업로드 한도에 도달했습니다. 계속 스캔하려면 업그레이드하세요.",
+      "resultsTitle": "검색 결과",
+      "resultsFound": "{count}개 발견",
+      "saveToFolder": "이 검색을 폴더에 저장",
+      "savedToFolder": "저장됨: {name}",
+      "runSearchFirst": "먼저 검색을 실행한 뒤 폴더에 저장하세요.",
+      "chooseFolder": "기존 폴더 선택",
+      "loadingFolders": "폴더를 불러오는 중...",
+      "noFolders": "아직 폴더가 없습니다. 아래에서 새로 만드세요.",
+      "createFolderPlaceholder": "새 폴더 만들기",
+      "createFolder": "생성",
+      "savedToNotice": "\"{name}\"에 저장됨",
+      "removedFromFolder": "폴더에서 제거됨",
+      "noFolder": "폴더 없음",
+      "grid": "그리드",
+      "list": "목록",
+      "headers": {
+        "image": "이미지",
+        "details": "상세",
+        "engine": "엔진",
+        "action": "동작"
+      },
+      "lockedResults": "{count, plural, one {현재 요금제로 인해 결과 #개가 숨겨졌습니다. 전체 썸네일과 원본 링크를 보려면 업그레이드하세요.} other {현재 요금제로 인해 결과 #개가 숨겨졌습니다. 전체 썸네일과 원본 링크를 보려면 업그레이드하세요.}}",
+      "searching": "일치 항목을 검색하는 중...",
+      "previewAria": "결과 이미지 미리보기",
+      "resultImageAlt": "결과 이미지",
+      "noTitle": "제목 없음",
+      "upgradeToView": "이 결과를 보려면 요금제를 업그레이드하세요",
+      "sourceBadge": "출처",
+      "upgradeRequired": "업그레이드 필요",
+      "hiddenSource": "숨김 - 업그레이드 필요",
+      "website": "웹사이트",
+      "engineLabel": "역검색",
+      "visitSite": "사이트 방문",
+      "upgradeNow": "지금 업그레이드",
+      "emptyTitle": "표시할 스캔 결과가 없습니다.",
+      "emptyDescription": "왼쪽에서 이미지를 업로드하여 시작하세요.",
+      "closePreviewAria": "이미지 미리보기 닫기",
+      "previewImageAlt": "미리보기 이미지",
+      "untitledResult": "제목 없는 결과",
+      "sourceLabel": "출처: {source}",
+      "planPrompt": {
+        "renewTitle": "구독을 갱신해야 합니다",
+        "nearLimitTitle": "월간 한도에 거의 도달했습니다",
+        "limitTitle": "업로드 한도에 도달했습니다",
+        "renewDescription": "이미지 스캔과 리포트를 계속 이용하려면 요금제를 갱신하세요.",
+        "nearLimitDescription": "월간 업로드 한도에 가까워졌습니다. 지금 업그레이드하면 작업 중단을 피할 수 있습니다.",
+        "limitDescription": "이번 달에 계속 업로드하고 스캔하려면 요금제를 업그레이드하세요.",
+        "maybeLater": "나중에",
+        "renewPlan": "요금제 갱신",
+        "upgradePlan": "요금제 업그레이드"
+      }
+    },
+    "monitoring": {
+      "title": "모니터링",
+      "description": "검색한 이미지를 정리하고, 이름/날짜/폴더로 필터링하며, 각 검토 흐름을 계속 진행하세요.",
+      "noItems": "항목 없음",
+      "allCollections": "모든 컬렉션",
+      "deleteSelectedFolder": "선택한 폴더 삭제",
+      "filterByImageName": "이미지 이름으로 필터",
+      "resetFilters": "필터 초기화",
+      "grid": "그리드",
+      "list": "목록",
+      "loading": "모니터링 데이터를 불러오는 중...",
+      "empty": "현재 필터에 해당하는 검색 이미지가 없습니다.",
+      "previewImageAria": "이미지 미리보기",
+      "closePreviewAria": "미리보기 닫기",
+      "labels": {
+        "date": "날짜",
+        "progress": "진행률",
+        "image": "이미지",
+        "fileName": "파일명",
+        "status": "상태"
+      },
+      "reviewedCount": "{reviewed}/{total} 검토됨",
+      "statusLabels": {
+        "analysisComplete": "분석 완료",
+        "monitoring": "모니터링 중",
+        "pendingReview": "검토 대기"
+      },
+      "pageLabel": "{start}-{end} / {total}",
+      "previous": "이전",
+      "next": "다음"
+    }
+  },
+  "Auth": {
+    "signupTitle": "회원가입",
+    "nameLabel": "반가워요! 성함을 알려주세요.",
+    "namePlaceholder": "실명을 입력해 주세요",
+    "businessLabel": "활동 중인 비즈니스 환경을 알려주세요.",
+    "businessPlaceholder": "소속 회사 또는 프로젝트명 입력",
+    "roleLabel": "현재 맡고 계신 구체적인 역할을 적어주세요.",
+    "rolePlaceholder": "직책/분야 입력 (예: 디자이너, CEO, 개발자, 프리랜서)",
+    "contactLabel": "침해 사실을 즉시 알려드릴 연락처입니다.",
+    "countryLabel": "현재 계신 주요 국가를 설정합니다.",
+    "emailLabel": "상세 분석 리포트를 보내드릴 주소입니다.",
+    "emailPlaceholder": "업무용 또는 활성 이메일 주소",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력해주세요",
+    "hasAccountText": "이미 계정이 있으신가요?",
+    "hasAccountLink": "로그인",
+    "submitSignup": "7일 무료로 시작하기",
+    "loginTitle": "계정 로그인",
+    "continueWithGoogle": "Google 계정으로 로그인",
+    "emailOnlyLabel": "이메일",
+    "loginEmailPlaceholder": "이메일 주소를 입력해주세요",
+    "passwordOnlyLabel": "패스워드",
+    "loginPasswordPlaceholder": "비밀번호를 입력해주세요",
+    "forgetPassword": "비밀번호 찾기",
+    "submitLogin": "로그인",
+    "noAccountText": "계정이 없으신가요?",
+    "noAccountLink": "회원가입",
+    "loginErrorGeneric": "문제가 발생했습니다. 다시 시도해 주세요.",
+    "processing": "처리 중...",
+    "phonePlaceholder": "010-0000-0000",
+    "defaultCountry": "대한민국 KR",
+    "confirmPasswordLabel": "비밀번호 확인",
+    "confirmPasswordPlaceholder": "비밀번호를 다시 입력해 주세요",
+    "passwordChecks": {
+      "minLength": "8자 이상",
+      "upper": "대문자",
+      "lower": "소문자",
+      "number": "숫자",
+      "special": "특수문자"
+    },
+    "passwordsMatch": "비밀번호가 일치합니다",
+    "passwordsDoNotMatch": "비밀번호가 일치하지 않습니다",
+    "passwordRequirementsError": "비밀번호가 모든 요구사항을 충족하지 않습니다.",
+    "passwordMismatchError": "비밀번호와 비밀번호 확인이 일치하지 않습니다.",
+    "validationNameRequired": "이름을 입력해 주세요.",
+    "validationBusinessRequired": "활동 중인 비즈니스 환경을 입력해 주세요.",
+    "validationRoleRequired": "구체적인 역할을 입력해 주세요.",
+    "validationContactRequired": "연락처 정보를 입력해 주세요.",
+    "validationContactInvalid": "유효한 연락처 번호를 입력해 주세요.",
+    "validationEmailRequired": "이메일 주소를 입력해 주세요.",
+    "validationEmailInvalid": "유효한 이메일 주소를 입력해 주세요.",
+    "validationPasswordRequired": "비밀번호를 입력해 주세요.",
+    "validationConfirmPasswordRequired": "비밀번호 확인을 입력해 주세요.",
+    "oauthError": "Google 로그인에 실패했습니다. 다시 시도하거나 이메일과 비밀번호로 로그인해 주세요.",
+    "resendEmailFirst": "먼저 이메일 주소를 입력한 뒤 인증 메일을 다시 보내세요.",
+    "resendSuccess": "인증 메일이 전송되었습니다. 받은편지함을 확인해 주세요.",
+    "resendError": "인증 메일 재전송에 실패했습니다. 다시 시도해 주세요.",
+    "resendLoading": "인증 메일 전송 중...",
+    "resendAction": "인증 메일 다시 보내기",
+    "verificationSuccess": "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.",
+    "verificationError": "인증 링크가 유효하지 않거나 만료되었습니다.",
+    "loading": "불러오는 중...",
+    "forgotPasswordPage": {
+      "eyebrow": "계정 접근",
+      "title": "비밀번호 찾기",
+      "description": "계정 이메일을 입력하면 안전한 재설정 링크를 보내드립니다.",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "이메일을 입력해 주세요",
+      "submit": "재설정 링크 보내기",
+      "submitLoading": "전송 중...",
+      "success": "이메일이 존재하면 재설정 링크가 전송됩니다.",
+      "error": "재설정 링크를 보내지 못했습니다. 다시 시도해 주세요.",
+      "backToLogin": "로그인으로 돌아가기",
+      "createAccount": "계정 만들기"
+    },
+    "verificationRequestPage": {
+      "eyebrow": "계정 설정",
+      "title": "이메일 인증",
+      "description": "받은편지함을 확인하고 계정을 활성화해 체험판을 이용하세요.",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "이메일을 입력해 주세요",
+      "submit": "인증 메일 다시 보내기",
+      "backToLogin": "로그인으로 돌아가기",
+      "backToSignup": "회원가입으로 돌아가기"
+    },
+    "resetPasswordPage": {
+      "eyebrow": "계정 접근",
+      "title": "비밀번호 재설정",
+      "description": "계정에 사용할 새 비밀번호를 설정하세요.",
+      "newPasswordLabel": "새 비밀번호",
+      "newPasswordPlaceholder": "새 비밀번호를 입력해 주세요",
+      "helper": "8~128자의 대문자, 소문자, 숫자, 특수문자를 모두 사용하세요.",
+      "confirmPasswordLabel": "비밀번호 확인",
+      "confirmPasswordPlaceholder": "새 비밀번호를 다시 입력해 주세요",
+      "submit": "비밀번호 재설정",
+      "submitLoading": "업데이트 중...",
+      "missingTokenError": "재설정 토큰이 없습니다. 새 재설정 링크를 요청해 주세요.",
+      "weakPasswordError": "8~128자의 대문자, 소문자, 숫자, 특수문자를 모두 포함해 주세요.",
+      "mismatchError": "비밀번호가 일치하지 않습니다.",
+      "success": "비밀번호가 재설정되었습니다. 이제 로그인할 수 있습니다.",
+      "error": "비밀번호를 재설정할 수 없습니다. 링크가 만료되었을 수 있습니다.",
+      "backToLogin": "로그인으로 돌아가기"
+    }
+  },
+  "Contact": {
+    "title": "문의하기",
+    "description": "맞춤형 플랜을 준비해 빠르게 답변드리겠습니다.",
+    "submitErrorRequired": "이름, 업무용 이메일, 문의 내용을 입력해 주세요.",
+    "submitSuccess": "문의가 정상적으로 접수되었습니다. 잠시 후 홈으로 이동합니다...",
+    "submitSuccessModal": "문의가 정상적으로 접수되었습니다.",
+    "submitError": "문의 전송에 실패했습니다. 다시 시도해 주세요.",
+    "closeDialogAria": "문의 다이얼로그 닫기",
+    "labels": {
+      "fullName": "이름",
+      "companyName": "회사명",
+      "workEmail": "업무용 이메일",
+      "phoneNumber": "전화번호",
+      "inquiryMessage": "문의 내용"
+    },
+    "placeholders": {
+      "fullName": "예: 홍길동",
+      "companyName": "예: UTRBOX Inc.",
+      "workEmail": "예: hong@company.com",
+      "phoneNumber": "예: +82 10-1234-5678",
+      "inquiryMessage": "예: 50개 이상의 자산과 월간 컴플라이언스 리포트를 위한 맞춤형 모니터링 플랜이 필요합니다."
+    },
+    "inquiryLimit": "최대 5000자",
+    "characterCount": "{count}/{limit}",
+    "marketingConsentTitle": "마케팅 수신 동의 (선택)",
+    "consentEmail": "마케팅 이메일 수신에 동의합니다.",
+    "consentSms": "SMS/문자 알림 수신에 동의합니다.",
+    "consentServiceUpdates": "서비스 업데이트 알림 수신에 동의합니다.",
+    "consentEventsPromotions": "이벤트 및 프로모션 알림 수신에 동의합니다.",
+    "consentHelp": "동의는 선택사항이며 언제든지 철회할 수 있습니다.",
+    "submit": "문의 보내기",
+    "submitLoading": "전송 중..."
+  },
+  "AboutPage": {
+    "eyebrow": "회사 소개",
+    "title": "IPHINT 소개",
+    "subtitle": "엔지니어가 만들고, 누구나 쉽게 사용할 수 있도록 설계했습니다.",
+    "illustrationSrc": "/login_kr.svg",
+    "illustrationAlt": "IPHINT 로그인 일러스트",
+    "sections": [
+      {
+        "title": "엔지니어가 만들고, 모두를 위해 설계했습니다.",
+        "paragraphs": [
+          "IPHINT는 두 형제 컴퓨터 엔지니어가 설립했습니다.",
+          "오랫동안 우리는 강력한 기술과 도구가 존재함에도 대부분 기업만을 위해 만들어져 개인에게는 너무 복잡하고 비싸다는 문제를 반복해서 보아왔습니다. 이미지 도용 탐지도 예외가 아니었습니다.",
+          "정교한 기술은 이미 존재했지만, 실제로 이를 사용할 수 있는 사람은 극히 제한적이었습니다."
+        ],
+        "callout": "왜 개인은 이 기술을 사용할 수 없을까?"
+      },
+      {
+        "title": "엔터프라이즈 기술을 누구나 접근 가능하게",
+        "paragraphs": [
+          "IPHINT는 엔터프라이즈 수준의 이미지 탐지 기술을 누구나 사용할 수 있도록 만드는 것을 목표로 합니다. 복잡한 설정이나 전문 지식 없이도 여러분의 콘텐츠를 보호할 수 있도록 시스템을 설계했습니다.",
+          "기술을 쉽게 만드는 동시에, 성능과 핵심 역량은 절대 타협하지 않습니다."
+        ]
+      },
+      {
+        "title": "문제를 이해한 엔지니어가 만든 서비스",
+        "paragraphs": [
+          "우리는 단순히 서비스를 만든 것이 아니라, 문제를 이해하고 해결책을 설계했습니다.",
+          "이미지가 어떻게 변형되고 어떻게 퍼져나가는지, 그리고 기존 방식이 왜 이를 탐지하지 못하는지 직접 연구했습니다. 그 결과 단순 검색을 넘어 실제 환경에서 작동하는 탐지 시스템을 구축했습니다."
+        ]
+      },
+      {
+        "title": "도구를 넘어 인프라로",
+        "paragraphs": [
+          "IPHINT는 단순한 도구나 기능이 아닙니다. 개인부터 기업까지 누구나 자신의 이미지 IP를 보호할 수 있도록 돕는 인프라입니다."
+        ]
+      },
+      {
+        "title": "우리의 미션",
+        "paragraphs": [
+          "우리의 미션은 기술 격차를 줄이는 것입니다. 한때 대기업만 사용할 수 있었던 기술을 개인도 활용할 수 있도록 만드는 것이 우리의 존재 이유입니다. 이를 통해 크리에이터와 브랜드는 규모와 상관없이 디지털 콘텐츠 IP 보호를 쉽게 이용할 수 있습니다."
+        ]
+      }
+    ],
+    "teamTitle": "우리 팀",
+    "teamMembers": [
+      {
+        "role": "디렉터",
+        "name": "Hyung-tae Kim"
+      },
+      {
+        "role": "UI/UX 디자이너",
+        "name": "Da-hyeon Kang"
+      },
+      {
+        "role": "AI 소프트웨어",
+        "name": "Mohaiminul Islam"
+      },
+      {
+        "role": "개발",
+        "name": "Raju Ahmmed"
+      },
+      {
+        "role": "정보 보안",
+        "name": "Seong-tae Kim"
+      }
+    ],
+    "backToMain": "메인으로 돌아가기"
+  },
+  "Admin": {
+    "sidebar": {
+      "brand": "관리자 콘솔",
+      "dashboard": "대시보드",
+      "users": "사용자 관리",
+      "searches": "검색 목록",
+      "analytics": "분석",
+      "apiUsage": "API 사용량",
+      "secureAccess": "보안 관리자 접근",
+      "secureAccessHint": "관리자 전용 권한으로 보호된 경로입니다."
+    },
+    "topbar": {
+      "eyebrow": "운영",
+      "title": "관리자 제어 센터",
+      "session": "관리자 세션"
+    },
+    "common": {
+      "refresh": "새로고침",
+      "loading": "관리자 데이터를 불러오는 중입니다...",
+      "noResults": "표시할 데이터가 없습니다.",
+      "unknownMember": "알 수 없는 회원",
+      "previous": "이전",
+      "next": "다음",
+      "paginationSummary": "전체 {total}개 중 {count}개 표시",
+      "apply": "필터 적용",
+      "reset": "초기화",
+      "viewDetails": "상세 보기",
+      "statusLabels": {
+        "active": "활성",
+        "inactive": "비활성",
+        "completed": "완료",
+        "processing": "처리 중",
+        "failed": "실패",
+        "reviewPending": "검토 대기",
+        "notReviewed": "미검토",
+        "reviewed": "검토 완료",
+        "takedownRequest": "삭제 요청",
+        "reportInfringement": "침해 신고",
+        "dispute": "이의 제기",
+        "legalSupportRequest": "법률지원 신청",
+        "underAnalysis": "분석 중",
+        "approved": "승인됨",
+        "trialing": "체험 중",
+        "pastDue": "연체",
+        "paused": "일시중지",
+        "pending": "대기 중",
+        "cancelled": "취소됨",
+        "expired": "만료됨"
+      },
+      "activityTypes": {
+        "search": "검색",
+        "subscription": "구독",
+        "userJoined": "회원 가입",
+        "payment": "결제"
+      },
+      "goToAdmin": "관리자 콘솔 열기",
+      "goToUserDashboard": "사용자 대시보드로 이동",
+      "logout": "로그아웃",
+      "generatedAt": "생성 시각"
+    },
+    "dashboard": {
+      "eyebrow": "관리자 개요",
+      "title": "플랫폼 대시보드",
+      "description": "콘텐츠 볼륨, 구독 현황, 최근 운영 활동을 하나의 화면에서 확인합니다.",
+      "metrics": {
+        "totalContent": "전체 콘텐츠",
+        "members": "회원 수",
+        "activeSubscriptions": "활성 구독",
+        "revenue": "이번 달 매출"
+      },
+      "metricHints": {
+        "totalContent": "인덱싱된 모든 검색과 분석 작업 수입니다.",
+        "members": "플랫폼에 등록된 전체 회원 수입니다.",
+        "activeSubscriptions": "유료 구독이 활성화된 회원 수입니다.",
+        "revenue": "이번 달 기준 보고된 총 구독 매출입니다."
+      },
+      "recentActivityTitle": "최근 활동",
+      "recentActivityDescription": "관리자 대시보드 API가 반환한 최신 회원 및 구독 이벤트입니다.",
+      "systemSnapshotTitle": "시스템 스냅샷",
+      "systemSnapshotDescription": "처리량과 검색 수요를 빠르게 확인할 수 있습니다.",
+      "snapshot": {
+        "analysisComplete": "분석 완료율",
+        "underAnalysis": "분석 중",
+        "searchesToday": "오늘의 검색 수"
+      },
+      "quickLinksTitle": "운영 바로가기",
+      "quickLinksDescription": "추가 확인이 필요한 관리자 목록으로 바로 이동합니다.",
+      "quickLinks": {
+        "usersTitle": "사용자 검토",
+        "usersDescription": "사용자 관리에서 요금제, 활동, 계정 상태를 확인합니다.",
+        "searchesTitle": "검색 검토",
+        "searchesDescription": "전체 회원 계정의 업로드 검색 내역을 추적합니다.",
+        "apiUsageTitle": "API 사용량 확인",
+        "apiUsageDescription": "문서화된 관리자 엔드포인트 기반의 파생 사용량 지표를 확인합니다."
+      }
+    },
+    "users": {
+      "eyebrow": "회원 운영",
+      "title": "사용자 관리",
+      "description": "모든 회원의 구독 등급과 계정 활동을 필터링하여 검토합니다.",
+      "summary": {
+        "totalMembers": "전체 회원",
+        "totalMembersHint": "현재 사용자 조회 쿼리가 반환한 전체 레코드 수입니다.",
+        "visibleMembers": "현재 페이지 회원",
+        "visibleMembersHint": "현재 필터 조건으로 반환된 회원 수입니다.",
+        "activeAccounts": "활성 계정",
+        "activeAccountsHint": "현재 결과 창에 포함된 활성 회원 수입니다.",
+        "proPlans": "프로 요금제",
+        "proPlansHint": "현재 페이지에서 프로 요금제를 사용하는 회원 수입니다."
+      },
+      "tableTitle": "회원 목록",
+      "tableDescription": "이름으로 검색하고 상태로 필터링한 뒤 전체 회원 기록을 열어봅니다.",
+      "filters": {
+        "searchPlaceholder": "이름으로 회원 검색",
+        "allStatuses": "모든 상태",
+        "perPage": "페이지당 {count}개"
+      },
+      "columns": {
+        "member": "회원",
+        "status": "상태",
+        "plan": "요금제",
+        "source": "출처",
+        "trialEnds": "체험 종료일",
+        "billingCycle": "청구",
+        "searches": "검색 수",
+        "joined": "가입일",
+        "actions": "작업"
+      },
+      "loading": "사용자 목록을 불러오는 중입니다...",
+      "empty": "현재 필터에 맞는 회원이 없습니다.",
+      "planFallback": "구독 없음",
+      "subscriptionUnavailable": "구독 정보 없음",
+      "noActiveSubscription": "활성 요금제 없음",
+      "noActivePlan": "활성 요금제 없음",
+      "trialBillingCycle": "체험"
+    },
+    "memberDetails": {
+      "eyebrow": "회원 상세",
+      "title": "{name} 회원 상세",
+      "description": "조치를 취하기 전에 구독 상태, 계정 상태, 최근 검색을 검토합니다.",
+      "backToUsers": "사용자 목록으로",
+      "loadingTitle": "회원 불러오는 중",
+      "loadingDescription": "회원 프로필과 최근 검색을 가져오고 있습니다.",
+      "loading": "회원 상세 정보를 불러오는 중입니다...",
+      "errorTitle": "회원 정보를 불러올 수 없습니다",
+      "errorDescription": "요청한 회원 프로필을 가져오지 못했습니다.",
+      "metrics": {
+        "credits": "크레딧",
+        "monitors": "모니터 수",
+        "searches": "총 검색 수",
+        "referrals": "추천 수"
+      },
+      "metricHints": {
+        "credits": "현재 계정에 남아 있는 크레딧입니다.",
+        "monitors": "이 회원 계정에 연결된 모니터링 작업 수입니다.",
+        "searches": "관리자 API가 반환한 누적 검색 수입니다.",
+        "referrals": "추천 코드로 연결된 성공 추천 수입니다."
+      },
+      "profileTitle": "프로필 요약",
+      "profileDescription": "신원, 승인 상태, 주요 계정 메타데이터입니다.",
+      "fields": {
+        "contact": "연락처",
+        "jobTitle": "직책",
+        "affiliation": "소속",
+        "country": "국가",
+        "joined": "가입일",
+        "referralCode": "추천 코드",
+        "subscriptionId": "구독 ID"
+      },
+      "unavailable": "없음",
+      "searchesTitle": "최근 검색",
+      "searchesDescription": "관리자 사용자 검색 엔드포인트의 페이징 검색 기록입니다.",
+      "searchColumns": {
+        "image": "이미지",
+        "status": "상태",
+        "date": "날짜",
+        "actions": "작업"
+      },
+      "searchesLoading": "회원 검색 기록을 불러오는 중입니다...",
+      "searchesEmpty": "현재 범위에 검색 기록이 없습니다.",
+      "subscriptionTitle": "구독",
+      "subscriptionDescription": "연결된 구독 레코드의 청구 식별자와 상태입니다.",
+      "subscriptionFields": {
+        "plan": "요금제",
+        "status": "상태",
+        "source": "출처",
+        "billingCycle": "청구 주기",
+        "trialDaysLeft": "체험 남은 일수",
+        "trialEndDate": "체험 종료일"
+      },
+      "trialDaysLeftValue": "{count}일 남음",
+      "trialHelperText": "유료 요금제로 업그레이드하지 않으면 체험이 종료됩니다.",
+      "trialExpired": "체험 만료",
+      "noActiveSubscription": "활성 요금제 없음",
+      "noActivePlan": "활성 요금제 없음",
+      "trialBillingCycle": "체험",
+      "adminActionsTitle": "관리자 작업",
+      "adminActionsDescription": "정책 위반이나 운영 조치가 필요할 때 계정을 비활성화합니다.",
+      "deactivateReasonLabel": "비활성화 사유",
+      "deactivateReasonPlaceholder": "계정을 비활성화하는 이유를 선택적으로 기록하세요.",
+      "deactivateButton": "회원 비활성화",
+      "alreadyInactive": "이미 비활성화된 회원입니다"
+    },
+    "searches": {
+      "eyebrow": "검색 운영",
+      "title": "검색 목록",
+      "description": "모든 회원의 업로드 검색 작업을 확인하고 상태별로 필터링합니다.",
+      "summary": {
+        "total": "전체 검색",
+        "totalHint": "현재 검색 쿼리가 반환한 전체 레코드 수입니다.",
+        "completed": "현재 페이지 완료",
+        "completedHint": "현재 페이지에서 완료된 검색 작업 수입니다.",
+        "averageDiscoveries": "평균 발견 수",
+        "averageDiscoveriesHint": "현재 표시 중인 검색의 평균 발견 수입니다.",
+        "uploaders": "업로더 수",
+        "uploadersHint": "현재 결과 창에 포함된 회원 수입니다."
+      },
+      "tableTitle": "검색 기록",
+      "tableDescription": "업로더 이름이나 검색 상태로 필터링하고 필요 시 회원 계정으로 이동합니다.",
+      "filters": {
+        "memberPlaceholder": "업로더 이름으로 필터링",
+        "allStatuses": "모든 상태"
+      },
+      "columns": {
+        "file": "파일",
+        "uploader": "업로더",
+        "status": "상태",
+        "discoveries": "발견 수",
+        "uploadDate": "업로드 날짜",
+        "actions": "작업"
+      },
+      "loading": "검색 목록을 불러오는 중입니다...",
+      "empty": "현재 필터에 맞는 검색이 없습니다."
+    },
+    "searchDetails": {
+      "eyebrow": "검색 상세",
+      "title": "검색 상세 정보",
+      "description": "선택한 검색 기록, 업로더 정보, 재스캔 일정, 연결된 모든 결과 항목을 검토합니다.",
+      "backToSearches": "검색 목록으로",
+      "loadingTitle": "검색 불러오는 중",
+      "loadingDescription": "선택한 검색 문서와 연결된 결과를 가져오고 있습니다.",
+      "loading": "검색 상세 정보를 불러오는 중입니다...",
+      "errorTitle": "검색 정보를 불러올 수 없습니다",
+      "errorDescription": "요청한 검색 기록을 가져오지 못했습니다.",
+      "metrics": {
+        "results": "결과 수",
+        "reviewed": "검토 완료",
+        "pendingReview": "검토 대기",
+        "status": "검색 상태"
+      },
+      "metricHints": {
+        "results": "이 검색에 연결된 전체 결과 항목 수입니다.",
+        "reviewed": "현재 페이지에서 검토가 완료된 결과 수입니다.",
+        "pendingReview": "현재 페이지에서 아직 관리자 검토를 기다리는 결과 수입니다.",
+        "status": "선택한 검색의 현재 처리 상태입니다."
+      },
+      "overviewTitle": "검색 개요",
+      "overviewDescription": "관리자 검색 상세 엔드포인트가 반환한 주요 메타데이터입니다.",
+      "fields": {
+        "uploader": "업로더",
+        "uploaderEmail": "업로더 이메일",
+        "uploadedAt": "업로드 시각",
+        "nextRescan": "다음 재스캔",
+        "lastRescan": "마지막 재스캔"
+      },
+      "searchImageAlt": "검색 이미지",
+      "resultsTitle": "결과 목록",
+      "resultsDescription": "이 검색에 연결된 페이지 결과 목록입니다. 전체 항목 수: {total}.",
+      "resultsPerPageLabel": "페이지당 결과 수",
+      "resultsLoading": "검색 결과를 불러오는 중입니다...",
+      "resultsEmpty": "이 검색에 반환된 결과 항목이 없습니다.",
+      "resultTitle": "결과 {index}",
+      "resultImageAlt": "결과 이미지",
+      "resultFields": {
+        "reviewStatus": "검토 상태",
+        "reviewedAt": "검토 시각",
+        "details": "세부 정보"
+      },
+      "resultDetailsEmpty": "이 결과에 표시할 세부 정보가 없습니다."
+    },
+    "apiUsage": {
+      "eyebrow": "파생 사용량",
+      "title": "API 사용량",
+      "description": "문서화된 관리자 대시보드와 검색 엔드포인트를 기반으로 계산한 운영 사용량 지표입니다.",
+      "metrics": {
+        "totalRequests": "총 요청 수",
+        "successRate": "성공률",
+        "averageDiscoveries": "평균 발견 수",
+        "activeMembers": "활성 회원"
+      },
+      "metricHints": {
+        "totalRequests": "대시보드 엔드포인트가 반환한 전체 분석 콘텐츠 수입니다.",
+        "successRate": "분석 완료 수를 전체 콘텐츠 수로 나눈 값입니다.",
+        "averageDiscoveries": "최근 검색 샘플의 평균 발견 수입니다.",
+        "activeMembers": "대시보드 엔드포인트가 반환한 회원 수입니다."
+      },
+      "breakdownTitle": "상태 분포",
+      "breakdownDescription": "최근 검색 기록을 관리자 상태 기준으로 분포화한 값입니다.",
+      "loading": "API 사용량 지표를 불러오는 중입니다...",
+      "empty": "표시할 사용량 데이터가 없습니다.",
+      "topUploadersTitle": "상위 업로더",
+      "topUploadersDescription": "최근 검색 샘플에서 검색량이 가장 많은 회원입니다.",
+      "topUploaderHint": "샘플 검색 기록 기준 최근 업로드 수",
+      "snapshotTitle": "요청 스냅샷",
+      "snapshotDescription": "빠른 운영 검토를 위한 핵심 카운터입니다.",
+      "snapshot": {
+        "searchesToday": "오늘의 검색 수",
+        "completed": "완료",
+        "pending": "대기",
+        "failed": "실패"
+      },
+      "methodologyTitle": "산출 방식",
+      "methodologyDescription": "사용 가능한 관리자 API를 기반으로 이 페이지를 계산하는 방식입니다.",
+      "methodologyCopy": "문서화된 관리자 API에는 전용 사용량 분석 엔드포인트가 없기 때문에, 이 페이지는 관리자 대시보드 응답과 최근 검색 {count}건을 결합해 계산합니다.",
+      "generatedAt": "생성 시각"
+    },
+    "analytics": {
+      "title": "웹사이트 분석",
+      "description": "Google Analytics 4 기반으로 공개 웹사이트 트래픽과 참여도를 분석합니다.",
+      "loading": "웹사이트 분석 데이터를 불러오는 중입니다...",
+      "filters": {
+        "last7Days": "최근 7일",
+        "last30Days": "최근 30일",
+        "last90Days": "최근 90일"
+      },
+      "metrics": {
+        "totalVisitors": "총 방문자",
+        "uniqueVisitors": "순 방문자",
+        "activeVisitors": "활성 방문자",
+        "pageViews": "페이지 조회수",
+        "sessions": "세션",
+        "engagementRate": "참여율",
+        "bounceRate": "이탈률",
+        "averageSessionDuration": "평균 세션 시간"
+      },
+      "hints": {
+        "totalVisitors": "선택한 기간 동안의 전체 방문자 수입니다.",
+        "uniqueVisitors": "선택 기간 내 첫 방문 사용자 수입니다.",
+        "activeVisitors": "GA4 보고서 기준 선택 기간의 활성 사용자 수입니다.",
+        "pageViews": "공개 페이지에서 추적된 전체 조회수입니다.",
+        "sessions": "선택 기간 동안 시작된 전체 세션 수입니다.",
+        "engagementRate": "GA4 기준 참여 세션 비율입니다.",
+        "bounceRate": "의미 있는 상호작용이 없는 세션 비율입니다.",
+        "averageSessionDuration": "전체 세션의 평균 지속 시간입니다."
+      },
+      "charts": {
+        "dailyVisitorsTitle": "일별 방문자 및 세션",
+        "dailyVisitorsDescription": "시간에 따른 방문자와 세션 추이입니다.",
+        "trafficGrowthTitle": "트래픽 성장",
+        "trafficGrowthDescription": "일별 방문자 성장률 추이입니다.",
+        "trafficSourcesTitle": "트래픽 소스",
+        "trafficSourcesDescription": "유입 채널별 세션 비중입니다.",
+        "deviceUsageTitle": "디바이스 사용",
+        "deviceUsageDescription": "디바이스 유형별 세션 분포입니다.",
+        "topCountriesTitle": "상위 국가",
+        "topCountriesDescription": "가장 많은 방문 트래픽을 만든 국가입니다.",
+        "topCitiesTitle": "상위 도시",
+        "topCitiesDescription": "가장 많은 방문 트래픽을 만든 도시입니다.",
+        "browserUsageTitle": "브라우저 분석",
+        "browserUsageDescription": "주요 브라우저별 세션 분포입니다.",
+        "topPagesTitle": "상위 페이지",
+        "topPagesDescription": "선택한 기간 동안 가장 많이 조회된 페이지입니다."
+      },
+      "sourceCategories": {
+        "organicSearch": "오가닉 검색",
+        "direct": "직접 유입",
+        "social": "소셜",
+        "referral": "리퍼럴"
+      },
+      "deviceCategories": {
+        "mobile": "모바일",
+        "desktop": "데스크톱",
+        "tablet": "태블릿"
+      },
+      "browserCategories": {
+        "chrome": "Chrome",
+        "safari": "Safari",
+        "edge": "Edge",
+        "firefox": "Firefox"
+      },
+      "panels": {
+        "topContentTitle": "상위 콘텐츠",
+        "topContentDescription": "사용자가 가장 오래 머문 콘텐츠/페이지입니다.",
+        "landingPagesTitle": "상위 랜딩 페이지",
+        "landingPagesDescription": "참여도가 높은 유입 시작 페이지입니다.",
+        "audienceBreakdownTitle": "오디언스 분석",
+        "audienceBreakdownDescription": "브라우저, 운영체제, 리퍼러 기준 오디언스 분포입니다.",
+        "liveActiveVisitorsTitle": "실시간 활성 사용자",
+        "liveActiveVisitorsDescription": "위치, 디바이스, 브라우저, 현재 활성 페이지 기준 실시간 사용자 스냅샷입니다."
+      },
+      "realtime": {
+        "totalActiveUsers": "현재 활성 사용자",
+        "locationCountries": "상위 국가",
+        "locationCities": "상위 도시",
+        "devices": "디바이스",
+        "browsers": "브라우저",
+        "activePages": "활성 페이지",
+        "noActiveUsers": "현재 실시간 활성 사용자가 없습니다."
+      },
+      "table": {
+        "views": "조회수",
+        "sessions": "세션",
+        "engagement": "참여율",
+        "bounce": "이탈률",
+        "duration": "평균 시간"
+      },
+      "audience": {
+        "browsers": "브라우저",
+        "operatingSystems": "운영체제",
+        "referrers": "리퍼러"
+      },
+      "empty": "선택한 기간에 표시할 웹사이트 분석 데이터가 없습니다.",
+      "legends": {
+        "visitors": "방문자",
+        "sessions": "세션",
+        "growthRate": "성장률"
+      }
+    }
+  },
+  "services": {
+    "about": {
+      "title": "IPHINT 소개",
+      "subtitle": "콘텐츠를 모니터링하는 가장 쉬운 방법."
+    },
+    "commonReality": {
+      "title": "현실",
+      "subtitle": "디지털 콘텐츠, 침해는 빠르고 도용은 쉽습니다.",
+      "stats": {
+        "unauthorizedCopies": {
+          "value": "85%",
+          "label": "무단\n복제"
+        },
+        "imagesShared": {
+          "value": "2.5B",
+          "label": "일일\n이미지 공유"
+        },
+        "manualTracking": {
+          "value": "3%",
+          "label": "수동 추적\n한계"
+        },
+        "unprotectedContent": {
+          "value": "97%",
+          "label": "미보호\n콘텐츠"
+        }
+      },
+      "infoBoxTitle": "온라인 이미지의 85%가 무단으로 사용됩니다.",
+      "infoBoxBody": "소셜 미디어와 웹 플랫폼이 폭발적으로 증가하면서, 작업물이 언제 어디서 도용되는지 추적하는 것이 사실상 불가능해졌습니다. 창작자 중 단 3%만이 침해에 대해 조치를 취하며, 나머지 97%는 무방비 상태로 도용에 노출되어 있습니다.",
+      "source": "ipHint 내부 분석 출처: 글로벌 이미지 도용 보고서 및 내부 분석"
+    },
+    "ourSolution": {
+      "title": "솔루션",
+      "subtitle": "브랜드와 창작자를 디지털 위험으로부터 보호합니다",
+      "features": {
+        "brandProtection": "브랜드\n보호",
+        "contentProtection": "콘텐츠\n보호",
+        "infringementPrevention": "침해\n방지",
+        "copyrightManagement": "저작권\n관리"
+      },
+      "infoBoxTitle": "직접 이미지 데이터 분석으로 모든 수정 사항을 식별합니다.",
+      "infoBoxBody": "방대한 디지털 콘텐츠 속에서 브랜드와 창작 권리를 보호하기 위한 기술적 우위를 제공합니다."
+    },
+    "ourService": {
+      "title": "서비스",
+      "subtitle": "디지털 콘텐츠 IP 보호 및 모니터링 도구",
+      "features": {
+        "contentRegistration": "콘텐츠\n등록",
+        "matchDetection": "일치\n감지",
+        "dashboardReview": "대시보드\n검토",
+        "instantAlert": "즉시\n알림"
+      },
+      "bullets": [
+        "모니터링 기술은 과거 대기업만 이용할 수 있는 고비용 전용 서비스였습니다.",
+        "개인 창작자와 중소 브랜드는 자신의 권리를 보호하는 데 높은 진입 장벽에 직면해 왔습니다.",
+        "이제 당사의 확장 가능한 모니터링 기술로 기업 규모에 관계없이 지식재산권을 보호할 수 있습니다."
+      ],
+      "infoBoxTitle": "수동 검색의 한계를 넘어. 지금 바로 작업물을 보호하세요.",
+      "infoBoxBody": "디지털 핑거프린팅 기술로 수정되거나 변형된 콘텐츠도 탐지합니다. 24시간 자동 모니터링으로 침해 발생 즉시 알림을 받아 권리 보호에서 항상 한 발 앞서 나갈 수 있습니다."
+    }
+  },
+  "Pricing": {
+    "heading": "요금제",
+    "subheading": "모두를 위한 자율성. 나에게 맞는 플랜을 선택하세요.",
+    "monthly": "월간",
+    "yearly": "연간",
+    "sale": "40% 할인",
+    "getStarted": "시작하기",
+    "contact": "문의하기",
+    "perMonth": "/월",
+    "perUnit": "건당",
+    "billedMonthly": "월 청구 금액",
+    "starter": {
+      "name": "STARTER",
+      "tagline": "개인 및 프리랜서에게 적합",
+      "subtext": "추천 코드로 무료 등록",
+      "features": [
+        "등록 항목 최대 10개 모니터링",
+        "누적 탐지 알림 최대 1,000건",
+        "자동 중복 콘텐츠 필터",
+        "콘텐츠 노출 위험 분석"
+      ]
+    },
+    "pro": {
+      "name": "PRO",
+      "tagline": "크리에이터 및 인플루언서에게 적합",
+      "subtext": "STARTER의 약 절반 가격",
+      "features": [
+        "STARTER의 모든 기능 포함",
+        "등록 항목 최대 50개 모니터링",
+        "누적 탐지 알림 최대 5,000건",
+        "PDF 보고서 생성"
+      ]
+    },
+    "premium": {
+      "name": "PREMIUM",
+      "tagline": "기업 및 에이전시에게 적합",
+      "subtext": "전 플랜 중 건당 최저 단가",
+      "footerNote": "대기업 플랜 문의하기",
+      "features": [
+        "PRO의 모든 기능 포함",
+        "등록 항목 최대 100개 모니터링",
+        "무제한 탐지 알림",
+        "1:1 전담 매니저 배정"
+      ]
+    },
+    "comparison": {
+      "heading": "플랜 비교",
+      "planNames": [
+        "STARTER",
+        "PRO",
+        "PREMIUM"
+      ],
+      "rows": [
+        {
+          "label": "연간 결제 (월 환산)",
+          "starter": "7,920",
+          "pro": "20,300",
+          "premium": "29,400"
+        },
+        {
+          "label": "월간 결제",
+          "starter": "9,900",
+          "pro": "29,000",
+          "premium": "49,000"
+        },
+        {
+          "label": "연간 할인율",
+          "starter": "20%",
+          "pro": "30%",
+          "premium": "40%"
+        },
+        {
+          "label": "모니터링 항목 수",
+          "starter": "최대 10개",
+          "pro": "최대 50개",
+          "premium": "최대 100개"
+        },
+        {
+          "label": "알림 한도",
+          "starter": "1,000건",
+          "pro": "5,000건",
+          "premium": "무제한"
+        },
+        {
+          "label": "건당 단가 (연간)",
+          "starter": "792",
+          "pro": "406",
+          "premium": "294"
+        }
+      ]
+    },
+    "faq": {
+      "heading": "자주 묻는 질문",
+      "items": [
+        {
+          "question": "모니터링은 어떻게 작동하나요?",
+          "answer": "당사의 지능형 AI가 등록된 이미지를 기반으로 24시간 365일 빠짐없이 전체 웹을 스캔합니다. 유사한 이미지가 발견되는 즉시 상세 분석이 이루어지고 대시보드에 기록되며, 즉각적인 조치를 취할 수 있도록 실시간 알림이 전송됩니다. 최적화된 데이터 관리를 위해 발견된 모든 데이터는 30일간 안전하게 보관됩니다."
+        },
+        {
+          "question": "누적 탐지 한도에 도달하면 어떻게 되나요?",
+          "answer": "한도를 초과하면 새로운 탐지에 대한 모니터링 및 알림이 일시 중지됩니다. 중단 없이 서비스를 계속 이용하려면 상위 플랜으로 업그레이드하거나 다음 결제일에 한도가 초기화될 때까지 기다리시면 됩니다. (PREMIUM 플랜은 탐지 한도 없이 무제한 이용 가능합니다!)"
+        },
+        {
+          "question": "구독 중간에 플랜을 변경할 수 있나요?",
+          "answer": "네, 언제든지 플랜을 변경할 수 있습니다! 업그레이드 시 남은 기간에 대한 차액만 결제하면 확장된 혜택을 즉시 이용할 수 있습니다. 다운그레이드는 현재 구독 기간이 종료된 후 다음 결제 주기부터 적용됩니다."
+        },
+        {
+          "question": "연간 구독 중 취소하면 어떻게 되나요?",
+          "answer": "취소 후에도 현재 선불 결제된 구독 기간이 끝날 때까지 모든 기능을 정상적으로 이용하실 수 있습니다. 다음 해에는 구독이 자동 갱신되지 않습니다. 단, 연간 플랜에는 할인이 포함되어 있으므로 중도 환불은 이용 약관에 따라 제한될 수 있습니다."
+        },
+        {
+          "question": "계정을 삭제하면 등록된 이미지는 어떻게 되나요?",
+          "answer": "계정 삭제 시 등록된 모든 이미지와 모니터링 데이터는 개인정보 및 소중한 창작물 보호를 위해 즉시 영구적으로 삭제됩니다. 삭제된 데이터는 복구가 불가능하므로, 계정 해지 전에 필요한 보고서를 미리 다운로드하시기를 권장합니다."
+        }
+      ]
+    },
+    "referral": {
+      "title": "추천 코드가 있으신가요?",
+      "description": "회원가입 시 코드를 입력하면 즉시 무료 체험이 시작됩니다.",
+      "steps": [
+        "코드 받기",
+        "가입 시 입력",
+        "1개월 무료",
+        "플랜 선택"
+      ]
+    }
+  },
+  "UserPanel": {
+    "reports": {
+      "title": "보고서",
+      "description": "역방향 이미지 검색 결과를 기반으로 전문 PDF 증거 보고서를 생성하세요.",
+      "lockedTitle": "현재 요금제에서는 PDF 보고서가 잠겨 있습니다",
+      "lockedDescription": "보고서 미리보기 및 다운로드를 잠금 해제하려면 요금제를 업그레이드하세요. Pro 및 Premium에는 전체 PDF 내보내기가 포함됩니다.",
+      "lockedCta": "요금제를 업그레이드하여 이 기능 잠금 해제",
+      "emptyTitle": "아직 보고서가 없습니다",
+      "emptyDescription": "이미지 검색을 실행하면 첫 번째 보고서가 생성됩니다.",
+      "cardTitle": "검색 보고서",
+      "download": "다운로드",
+      "generating": "생성 중\u2026",
+      "preview": "미리보기",
+      "opening": "열기 중\u2026",
+      "match": "일치",
+      "matches": "일치",
+      "page": "페이지",
+      "pages": "페이지",
+      "searchImageAlt": "검색 이미지",
+      "modalTitle": "현재 요금제에서 사용할 수 없는 기능입니다",
+      "modalDescription": "PDF 보고서는 Pro 및 Premium 플랜에서 이용 가능합니다. 지금 업그레이드하여 전문 보고서를 내보내고 공유하세요.",
+      "maybeLater": "나중에",
+      "upgradePlan": "요금제 업그레이드"
+    },
+    "referral": {
+      "title": "추천 프로그램",
+      "description": "언제든지 추천 링크를 공유하세요. 가입 후 로그인한 사용자 5명을 추천하면 PDF & 보고서 영구 이용권이 잠금 해제됩니다.",
+      "milestoneTitle": "마일스톤 보상",
+      "milestoneDescription": "사용자 {target}명 추천 \u2192 PDF & 보고서 영구 이용권",
+      "milestoneUnlocked": "잠금 해제됨 \u2713",
+      "progress": "진행률",
+      "totalSignups": "총 가입 수",
+      "completedReferrals": "완료된 추천",
+      "rewardsEarned": "획득한 보상",
+      "referralLinkTitle": "내 추천 링크",
+      "copy": "복사",
+      "copied": "복사 완료!",
+      "codeLabel": "코드:",
+      "codeNote": "내 링크로 가입한 신규 사용자는 프리미엄 1개월 무료 혜택을 받습니다.",
+      "referralStatusTitle": "추천 현황",
+      "referralStatusNote": "추천 링크는 항상 활성 상태입니다. 완료된 추천은 지속적으로 집계됩니다.",
+      "howItWorksTitle": "이용 방법",
+      "step1": "추천 링크를 공유하세요. 내 링크로 가입한 친구는 프리미엄 1개월 무료 혜택을 받습니다.",
+      "step2": "신규 사용자가 처음 로그인해야 추천이 '완료'됩니다.",
+      "step3": "5명 완료 추천으로 PDF & 보고서 이용권을 영구적으로 잠금 해제하세요."
+    },
+    "settings": {
+      "title": "설정",
+      "description": "프로필, 보안, 알림 채널을 한 곳에서 관리하세요.",
+      "unreadLabel": "읽지 않은 알림:",
+      "tabProfile": "프로필 및 보안",
+      "tabNotifications": "알림",
+      "tabAppearance": "외관",
+      "profileTitle": "프로필",
+      "fullName": "이름",
+      "email": "이메일",
+      "organization": "소속 기관",
+      "jobTitle": "직책",
+      "country": "국가",
+      "phoneNumber": "전화번호",
+      "roleLabel": "역할:",
+      "joinedLabel": "가입일:",
+      "saving": "저장 중...",
+      "saveProfile": "프로필 저장",
+      "notificationsTitle": "알림 및 주간 모니터링",
+      "notificationsDescription": "모니터링 재스캔은 업로드된 이미지에 대해 7일마다 자동으로 실행됩니다.",
+      "emailNotifications": "이메일 알림",
+      "inAppNotifications": "인앱 알림",
+      "weeklyRescan": "업로드된 이미지 주간 재스캔",
+      "notifyMatches": "새로운 일치 항목이 있을 때만 알림",
+      "digestFrequency": "알림 빈도",
+      "instant": "즉시",
+      "daily": "매일",
+      "weekly": "매주",
+      "savePreferences": "환경설정 저장",
+      "securityTitle": "보안",
+      "currentPassword": "현재 비밀번호",
+      "newPassword": "새 비밀번호",
+      "confirmPassword": "비밀번호 확인",
+      "updating": "업데이트 중...",
+      "updatePassword": "비밀번호 변경",
+      "inboxTitle": "알림 받은편지함",
+      "unreadCount": "읽지 않음: {count}",
+      "markAllRead": "모두 읽음 처리",
+      "deleteAll": "전체 삭제",
+      "searchAlerts": "알림 검색",
+      "search": "검색",
+      "all": "전체",
+      "unread": "읽지 않음",
+      "refresh": "새로고침",
+      "noNotifications": "현재 필터에 해당하는 알림이 없습니다.",
+      "markRead": "읽음 처리",
+      "delete": "삭제",
+      "deleteConfirm": "삭제하시겠습니까?",
+      "no": "아니요",
+      "yes": "예",
+      "appearanceTitle": "외관",
+      "fontFamilyTitle": "글꼴 종류",
+      "fontFamilyDescription": "글꼴은 앱 전체에서 언어에 따라 자동으로 적용됩니다.",
+      "fontSizeTitle": "글꼴 크기",
+      "fontSizeDescription": "앱 전체의 텍스트 크기를 조정합니다.",
+      "previewLabel": "미리보기",
+      "fontNote": "영어는 Noto Sans를 사용합니다. 한국어는 Pretendard를 사용합니다.",
+      "passwordMismatch": "새 비밀번호와 확인 비밀번호가 일치하지 않습니다.",
+      "passwordTooShort": "새 비밀번호는 최소 8자 이상이어야 합니다.",
+      "profileSaved": "프로필이 업데이트되었습니다.",
+      "profileSaveFailed": "프로필을 업데이트할 수 없습니다.",
+      "preferencesSaved": "알림 설정이 저장되었습니다.",
+      "preferencesSaveFailed": "알림 설정을 업데이트할 수 없습니다.",
+      "passwordSaved": "비밀번호가 변경되었습니다.",
+      "passwordSaveFailed": "비밀번호를 변경할 수 없습니다.",
+      "notificationsFailed": "알림을 불러오지 못했습니다.",
+      "notificationDeleted": "알림이 삭제되었습니다.",
+      "notificationDeleteFailed": "알림을 삭제할 수 없습니다.",
+      "allDeleted": "모든 알림이 삭제되었습니다.",
+      "allDeleteFailed": "알림 전체 삭제에 실패했습니다.",
+      "searchFailed": "알림 검색에 실패했습니다.",
+      "openFailed": "알림을 열 수 없습니다.",
+      "markReadFailed": "알림을 업데이트할 수 없습니다.",
+      "markAllReadFailed": "모든 알림을 읽음 처리할 수 없습니다.",
+      "allMarkedRead": "모든 알림이 읽음 처리되었습니다.",
+      "loadFailed": "설정을 불러오지 못했습니다"
+    },
+    "billing": {
+      "title": "결제",
+      "description": "요금제를 관리하고 Paddle을 통해 안전하게 결제하세요. 유료 요금제는 여기서 취소할 때까지 자동으로 갱신됩니다.",
+      "trialActive": "Pro 체험판이 활성 상태입니다.",
+      "trialDaysLeft": "Pro 체험판: {days}{unit} 남음.",
+      "trialConvert": "지금 구독하여 즉시 유료 Pro 구독으로 전환하세요.",
+      "pastDueWarning": "결제에 실패했습니다. 이용 권한을 유지하려면 결제 수단을 업데이트해 주세요.",
+      "updatePaymentMethod": "결제 수단 업데이트",
+      "loadingPayment": "불러오는 중...",
+      "pausedBadge": "일시중지",
+      "subscriptionPaused": "구독이 일시 중지되었습니다.",
+      "resumeOrExpire": "{date}에 재개되거나 만료됩니다.",
+      "resuming": "재개 중...",
+      "resume": "재개",
+      "autoRenewOffBadge": "자동 갱신 꺼짐",
+      "cancellationScheduled": "{date}에 해지가 예약되어 있습니다.",
+      "daysRemaining": "이번 결제 주기에 {days}{unit} 남았습니다.",
+      "resumeAutoRenew": "자동 갱신 재개",
+      "cancelledAccess": "요금제가 해지되었습니다. {date}까지 이용 가능합니다.",
+      "resubscribe": "재구독",
+      "currentPlanLabel": "현재 요금제: {name}",
+      "noActivePlan": "활성 요금제가 없습니다. 요금제를 구매하여 계속하세요.",
+      "unlimitedSearches": "무제한 검색 가능",
+      "searchesRemaining": "{count}회 검색 남음",
+      "unlimitedAlerts": "무제한 알림",
+      "alertsRemaining": "{count}개 알림 남음",
+      "uploadsUsed": "업로드 사용량",
+      "alerts": "알림",
+      "unlimited": "무제한",
+      "nextBilling": "다음 결제일: {date}",
+      "autoPayActive": "자동 결제가 Paddle을 통해 활성화되어 있으며 취소할 때까지 매{cycle} 갱신됩니다.",
+      "year": "년",
+      "month": "월",
+      "day": "일",
+      "days": "일",
+      "autoRenewOffAccess": "자동 갱신이 꺼져 있습니다. {date}까지 이용 가능합니다.",
+      "subscribeToPaidPlan": "결제 옵션을 관리하려면 유료 요금제를 구독하세요.",
+      "monthly": "월간",
+      "annual": "연간",
+      "pausing": "일시 중지 중...",
+      "pauseUnavailable": "해지 예약 중에는 사용할 수 없습니다",
+      "pauseAtPeriodEnd": "결제 주기 종료 시 일시 중지",
+      "cancelling": "해지 중...",
+      "cancellationScheduledBtn": "해지 예약됨",
+      "cancelAtPeriodEnd": "결제 주기 종료 시 해지",
+      "perMonth": "월",
+      "billedAnnually": "연간 결제",
+      "billedMonthly": "월간 결제",
+      "trialDaysLeftCard": "{days}{unit} 남음. 지금 구독하여 즉시 유료 Pro를 활성화하세요.",
+      "trialActiveCard": "체험 중. 지금 구독하여 즉시 유료 Pro를 활성화하세요.",
+      "autoPayStarts": "결제 후 자동 결제가 시작되며 취소할 때까지 {cycle}마다 갱신됩니다.",
+      "yearly": "년",
+      "currentBadge": "현재",
+      "proTrialBadge": "Pro 체험",
+      "currentPlanButton": "현재 요금제",
+      "billingHistoryTitle": "결제 내역",
+      "billingHistoryDescription": "이전 결제 내역을 확인하고 Paddle 인보이스 포털에서 영수증을 다운로드하세요.",
+      "openInvoicePortal": "인보이스 포털 열기",
+      "openingPortal": "열기 중...",
+      "loadingHistory": "결제 내역을 불러오는 중...",
+      "noHistory": "결제 내역이 없습니다.",
+      "dateHeader": "날짜",
+      "amountHeader": "금액",
+      "statusHeader": "상태",
+      "transactionHeader": "거래",
+      "checkoutOpened": "{plan} 결제가 시작되었습니다. 결제를 완료하여 활성화하세요.",
+      "subscriptionCancelled": "구독이 해지되었습니다.",
+      "subscriptionPausedSuccess": "구독이 이번 결제 주기 종료 시 일시 중지됩니다.",
+      "subscriptionResumed": "구독이 재개되었습니다.",
+      "autoRenewResumed": "자동 갱신이 다시 활성화되었습니다.",
+      "checkoutError": "Paddle에서 결제를 완료할 수 없습니다. 다시 시도해 주세요.",
+      "paddleNotConfigured": "이 화면의 유료 요금제는 Paddle 결제를 사용합니다. 유료 구독을 활성화하려면 NEXT_PUBLIC_PADDLE_CLIENT_TOKEN을 설정하세요."
+    }
+  }
+}

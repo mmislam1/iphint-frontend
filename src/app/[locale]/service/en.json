@@ -1,0 +1,60 @@
+{
+  "about": {
+    "title": "About IpHint",
+    "subtitle": "The easiest way to monitor your content."
+  },
+  "commonReality": {
+    "title": "Common Reality",
+    "subtitle": "Digital content, Fast to infringe, easy to steal.",
+    "stats": {
+      "unauthorizedCopies": {
+        "value": "85%",
+        "label": "Unauthorized\nCopies"
+      },
+      "imagesShared": {
+        "value": "2.5B",
+        "label": "Images\nShared Daily"
+      },
+      "manualTracking": {
+        "value": "3%",
+        "label": "Manual Tracking\nLimit"
+      },
+      "unprotectedContent": {
+        "value": "97%",
+        "label": "Unprotected\nContent"
+      }
+    },
+    "infoBoxTitle": "85% of images online are pirated.",
+    "infoBoxBody": "As social media and web platforms explode, tracking where and how your work is stolen has become virtually impossible. While only 3% of creators take action against infringement, the remaining 97% are left unprotected and exposed to theft.",
+    "source": "ipHint Internal Analysis Source: Global Image Theft Report & Internal Analysis"
+  },
+  "ourSolution": {
+    "title": "Our Solution",
+    "subtitle": "Securing Brands and Creators Against Digital Risks",
+    "features": {
+      "brandProtection": "Brand\nProtection",
+      "contentProtection": "Content\nProtection",
+      "infringementPrevention": "Infringement\nPrevention",
+      "copyrightManagement": "Copyright\nManagement"
+    },
+    "infoBoxTitle": "Identify every modification with direct image data analysis.",
+    "infoBoxBody": "In a sea of digital content, we provide the technical edge to secure your brand and creative rights."
+  },
+  "ourService": {
+    "title": "Our Service",
+    "subtitle": "Digital Content IP Protection & Monitoring Tool",
+    "features": {
+      "contentRegistration": "Content\nRegistration",
+      "matchDetection": "Match\nDetection",
+      "dashboardReview": "Dashboard\nReview",
+      "instantAlert": "Instant\nAlert"
+    },
+    "bullets": [
+      "Monitoring technology used to be an exclusive, high-cost service available only to large corporations.",
+      "Individual creators and small-to-medium brands have faced significant entry barriers in protecting their own rights.",
+      "Now, our scalable monitoring technology makes it possible to protect intellectual property regardless of your business size."
+    ],
+    "infoBoxTitle": "top manual searches. Start protecting your work.",
+    "infoBoxBody": "Our technology uses digital fingerprinting to detect even modified or altered content. With 24/7 automated monitoring, we alert you the moment infringement happens—keeping you one step ahead in securing your rights."
+  }
+}

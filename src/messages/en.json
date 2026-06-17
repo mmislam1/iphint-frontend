@@ -1,0 +1,1320 @@
+{
+  "Dashboard": {
+    "welcome": "Welcome back, {name}",
+    "referralLink": "Referral Link",
+    "copied": "Copied!",
+    "overview": "Here's your image intelligence overview",
+    "totalScans": "Total Scans",
+    "matchesFound": "Matches Found",
+    "activeMonitors": "Active Monitors",
+    "startScanTitle": "Start a New Scan",
+    "startScanSub": "Upload an image to begin reverse search analysis",
+    "uploadBtn": "Upload Image",
+    "recentScans": "Recent Scans",
+    "viewAll": "View All",
+    "matches": "matches",
+    "completed": "completed",
+    "processing": "processing",
+    "recentAlerts": "Recent Alerts",
+    "viewAllAlerts": "View All Alerts",
+    "quickActions": "Quick Actions",
+    "newScanAction": "New Scan",
+    "viewMonitoringAction": "View Monitoring",
+    "generateReportAction": "Generate Report",
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "searches": "Searches",
+      "monitoring": "Monitoring",
+      "reports": "Reports",
+      "referral": "Referral",
+      "billing": "Billing",
+      "settings": "Settings",
+      "currentPlan": "Current plan",
+      "loadingPlan": "Loading...",
+      "premiumTrial": "Premium trial: {count} {unit} left",
+      "day": "day",
+      "days": "days",
+      "upgradeBeforeTrialEnds": "Upgrade before trial ends",
+      "renewPlan": "Renew plan",
+      "buyNow": "Buy now",
+      "upgradePlan": "Upgrade plan",
+      "logout": "Logout",
+      "userFallback": "User",
+      "organizationFallback": "Organization",
+      "closeOverlay": "Close sidebar overlay",
+      "goToDashboard": "Go to dashboard"
+    },
+    "topbar": {
+      "pageTitles": {
+        "dashboard": "Dashboard",
+        "monitoring": "Monitoring",
+        "billing": "Billing",
+        "settings": "Settings",
+        "details": "Details",
+        "searches": "Searches"
+      },
+      "openSidebar": "Open sidebar",
+      "openNotifications": "Open notifications",
+      "notifications": "Notifications",
+      "markAllRead": "Mark all read",
+      "searchPlaceholder": "Search notifications",
+      "empty": "No notifications found.",
+      "markAsRead": "Mark as read",
+      "deleteNotification": "Delete notification"
+    },
+    "scan": {
+      "title": "Image Scan",
+      "description": "Upload an image or paste a URL to search for matches across the web.",
+      "planUsage": "Plan usage: {used}/{limit} uploads this month.",
+      "currentPlanFallback": "current",
+      "dropzoneTitle": "Click to upload or drag and drop",
+      "dropzoneHint": "PNG, JPG, or WEBP up to 10MB",
+      "or": "OR",
+      "urlPlaceholder": "Paste image URL here...",
+      "searchButton": "Search Image",
+      "searchSource": "Search Source",
+      "clear": "Clear",
+      "errorTitle": "Search request failed",
+      "errorMessage": "Search request failed.",
+      "limitTitle": "Monthly upload quota reached",
+      "limitMessage": "You have reached your monthly upload limit for the {planName} plan. Upgrade to continue scanning without interruption.",
+      "resultsTitle": "Search Results",
+      "resultsFound": "{count} Found",
+      "saveToFolder": "Save this search to a folder",
+      "savedToFolder": "Saved: {name}",
+      "runSearchFirst": "Run a search first, then save it to a folder.",
+      "chooseFolder": "Choose existing folder",
+      "loadingFolders": "Loading folders...",
+      "noFolders": "No folders yet. Create one below.",
+      "createFolderPlaceholder": "Create new folder",
+      "createFolder": "Create",
+      "savedToNotice": "Saved to \"{name}\"",
+      "removedFromFolder": "Removed from folder",
+      "noFolder": "No folder",
+      "grid": "Grid",
+      "list": "List",
+      "headers": {
+        "image": "Image",
+        "details": "Details",
+        "engine": "Engine",
+        "action": "Action"
+      },
+      "lockedResults": "{count, plural, one {# result hidden by your current plan. Upgrade membership to unlock full thumbnails and source links.} other {# results hidden by your current plan. Upgrade membership to unlock full thumbnails and source links.}}",
+      "searching": "Searching for matches...",
+      "previewAria": "Preview result image",
+      "resultImageAlt": "Result",
+      "noTitle": "No title",
+      "upgradeToView": "Upgrade plan to view this result",
+      "sourceBadge": "Source",
+      "upgradeRequired": "Upgrade required",
+      "hiddenSource": "Hidden - upgrade required",
+      "website": "Website",
+      "engineLabel": "Reverse Search",
+      "visitSite": "Visit Site",
+      "upgradeNow": "Upgrade now",
+      "emptyTitle": "No scan results to display.",
+      "emptyDescription": "Start by uploading an image on the left.",
+      "closePreviewAria": "Close image preview",
+      "previewImageAlt": "preview image",
+      "untitledResult": "Untitled result",
+      "sourceLabel": "Source: {source}",
+      "planPrompt": {
+        "renewTitle": "Your subscription needs renewal",
+        "nearLimitTitle": "You are close to your monthly limit",
+        "limitTitle": "You have reached your upload limit",
+        "renewDescription": "Renew your plan to keep uninterrupted access to image scans and reports.",
+        "nearLimitDescription": "You are approaching your monthly upload cap. Upgrading now helps avoid workflow interruption.",
+        "limitDescription": "Upgrade your plan to continue uploading and scanning images this month.",
+        "maybeLater": "Maybe later",
+        "renewPlan": "Renew plan",
+        "upgradePlan": "Upgrade plan"
+      }
+    },
+    "monitoring": {
+      "title": "Monitoring",
+      "description": "Keep all searched images organized, filter by name/date/folder, and continue each review flow.",
+      "noItems": "No items",
+      "allCollections": "All collections",
+      "deleteSelectedFolder": "Delete selected folder",
+      "filterByImageName": "Filter by image name",
+      "resetFilters": "Reset Filters",
+      "grid": "Grid",
+      "list": "List",
+      "loading": "Loading monitoring data...",
+      "empty": "No searched images found for current filters.",
+      "previewImageAria": "Preview image",
+      "closePreviewAria": "Close preview",
+      "labels": {
+        "date": "Date",
+        "progress": "Progress",
+        "image": "Image",
+        "fileName": "File Name",
+        "status": "Status"
+      },
+      "reviewedCount": "{reviewed}/{total} reviewed",
+      "statusLabels": {
+        "analysisComplete": "Analysis Complete",
+        "monitoring": "Monitoring",
+        "pendingReview": "Pending Review"
+      },
+      "pageLabel": "{start}-{end} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "Auth": {
+    "signupTitle": "Sign up",
+    "nameLabel": "What is your name?",
+    "namePlaceholder": "Enter your full name",
+    "businessLabel": "Your business environment?",
+    "businessPlaceholder": "Company or project name",
+    "roleLabel": "What is your specific role?",
+    "rolePlaceholder": "e.g. Designer, CEO, Freelancer",
+    "contactLabel": "Alert contact info",
+    "countryLabel": "Primary country/region",
+    "emailLabel": "Email for reports",
+    "emailPlaceholder": "Work or active email address",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Create a password",
+    "hasAccountText": "Already have an account?",
+    "hasAccountLink": "Log in",
+    "submitSignup": "Start your 7-day free trial",
+    "loginTitle": "Log in to your account",
+    "continueWithGoogle": "Continue with Google",
+    "emailOnlyLabel": "Email",
+    "loginEmailPlaceholder": "Please enter your email address",
+    "passwordOnlyLabel": "Password",
+    "loginPasswordPlaceholder": "Please enter your password",
+    "forgetPassword": "Forget Password",
+    "submitLogin": "Log in",
+    "noAccountText": "Don't have an account?",
+    "noAccountLink": "Sign up",
+    "processing": "Processing...",
+    "phonePlaceholder": "010-0000-0000",
+    "defaultCountry": "South Korea KR",
+    "confirmPasswordLabel": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "passwordChecks": {
+      "minLength": "8+ chars",
+      "upper": "Upper",
+      "lower": "Lower",
+      "number": "Number",
+      "special": "Special"
+    },
+    "passwordsMatch": "Passwords match",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "passwordRequirementsError": "Password does not meet all requirements.",
+    "passwordMismatchError": "Password and confirm password do not match.",
+    "validationNameRequired": "Please enter your name.",
+    "validationBusinessRequired": "Please enter your business environment.",
+    "validationRoleRequired": "Please enter your specific role.",
+    "validationContactRequired": "Please enter your alert contact info.",
+    "validationContactInvalid": "Please enter a valid contact number.",
+    "validationEmailRequired": "Please enter your email address.",
+    "validationEmailInvalid": "Please enter a valid email address.",
+    "validationPasswordRequired": "Please enter your password.",
+    "validationConfirmPasswordRequired": "Please confirm your password.",
+    "oauthError": "Google sign-in failed. Please try again or use email and password.",
+    "resendEmailFirst": "Enter your email address first, then resend verification.",
+    "resendSuccess": "Verification email sent. Please check your inbox.",
+    "resendError": "Failed to resend verification email. Please try again.",
+    "resendLoading": "Sending verification...",
+    "resendAction": "Resend verification email",
+    "verificationSuccess": "Email verified successfully. You can now log in.",
+    "verificationError": "Verification link is invalid or expired.",
+    "loading": "Loading...",
+    "forgotPasswordPage": {
+      "eyebrow": "Account access",
+      "title": "Forgot password",
+      "description": "Enter your account email and we will send you a secure reset link.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "submit": "Send reset link",
+      "submitLoading": "Sending...",
+      "success": "If your email exists, a reset link has been sent.",
+      "error": "Could not send reset link. Please try again.",
+      "backToLogin": "Back to login",
+      "createAccount": "Create an account"
+    },
+    "verificationRequestPage": {
+      "eyebrow": "Account setup",
+      "title": "Verify your email",
+      "description": "Check your inbox and activate your account to use your trial.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "submit": "Resend verification email",
+      "backToLogin": "Back to login",
+      "backToSignup": "Back to signup"
+    },
+    "resetPasswordPage": {
+      "eyebrow": "Account access",
+      "title": "Reset password",
+      "description": "Create a new password for your account.",
+      "newPasswordLabel": "New password",
+      "newPasswordPlaceholder": "Enter new password",
+      "helper": "Use 8-128 chars with uppercase, lowercase, number, and special character.",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Re-enter new password",
+      "submit": "Reset password",
+      "submitLoading": "Updating...",
+      "missingTokenError": "Reset token is missing. Please request a new reset link.",
+      "weakPasswordError": "Use 8-128 chars with uppercase, lowercase, number, and special character.",
+      "mismatchError": "Passwords do not match.",
+      "success": "Password reset successful. You can now log in.",
+      "error": "Unable to reset password. The link may be expired.",
+      "backToLogin": "Back to login"
+    }
+  },
+  "Admin": {
+    "sidebar": {
+      "brand": "Admin Console",
+      "dashboard": "Dashboard",
+      "users": "User Management",
+      "searches": "Searches",
+      "analytics": "Analytics",
+      "apiUsage": "API Usage",
+      "secureAccess": "Secure Admin Access",
+      "secureAccessHint": "Protected routes with admin-only access."
+    },
+    "topbar": {
+      "eyebrow": "Operations",
+      "title": "Admin Control Center",
+      "session": "Admin session"
+    },
+    "common": {
+      "refresh": "Refresh",
+      "loading": "Loading admin data...",
+      "noResults": "No data available for this view.",
+      "unknownMember": "Unknown member",
+      "previous": "Previous",
+      "next": "Next",
+      "paginationSummary": "Showing {count} of {total} records",
+      "apply": "Apply filters",
+      "reset": "Reset",
+      "viewDetails": "View details",
+      "statusLabels": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "completed": "Completed",
+        "processing": "Processing",
+        "failed": "Failed",
+        "reviewPending": "Review pending",
+        "notReviewed": "Not reviewed",
+        "reviewed": "Reviewed",
+        "takedownRequest": "Takedown Request",
+        "reportInfringement": "Report Infringement",
+        "dispute": "Dispute",
+        "legalSupportRequest": "Legal Support Request",
+        "underAnalysis": "Under analysis",
+        "approved": "Approved",
+        "trialing": "Trialing",
+        "pastDue": "Past due",
+        "paused": "Paused",
+        "pending": "Pending",
+        "cancelled": "Cancelled",
+        "expired": "Expired"
+      },
+      "activityTypes": {
+        "search": "Search",
+        "subscription": "Subscription",
+        "userJoined": "User joined",
+        "payment": "Payment"
+      },
+      "goToAdmin": "Open Admin Console",
+      "goToUserDashboard": "Go to User Dashboard",
+      "logout": "Logout",
+      "generatedAt": "Generated at"
+    },
+    "dashboard": {
+      "eyebrow": "Admin Overview",
+      "title": "Platform dashboard",
+      "description": "Monitor content volume, subscriptions, and recent admin activity from a single operations surface.",
+      "metrics": {
+        "totalContent": "Total content",
+        "members": "Members",
+        "activeSubscriptions": "Active subscriptions",
+        "revenue": "Revenue this month"
+      },
+      "metricHints": {
+        "totalContent": "All indexed searches and analysis jobs.",
+        "members": "All members currently registered on the platform.",
+        "activeSubscriptions": "Members with an active paid subscription.",
+        "revenue": "Gross subscription revenue reported for the current month."
+      },
+      "recentActivityTitle": "Recent activity",
+      "recentActivityDescription": "Latest member and subscription events returned by the admin dashboard API.",
+      "systemSnapshotTitle": "System snapshot",
+      "systemSnapshotDescription": "A quick read on processing throughput and search demand.",
+      "snapshot": {
+        "analysisComplete": "Analysis completion",
+        "underAnalysis": "Under analysis",
+        "searchesToday": "Searches today"
+      },
+      "quickLinksTitle": "Operational shortcuts",
+      "quickLinksDescription": "Jump directly into the admin lists that need follow-up.",
+      "quickLinks": {
+        "usersTitle": "Review users",
+        "usersDescription": "Open user management to inspect plans, activity, and account status.",
+        "searchesTitle": "Review searches",
+        "searchesDescription": "Track uploaded searches across every member account.",
+        "apiUsageTitle": "Inspect API usage",
+        "apiUsageDescription": "Open derived usage metrics based on the documented admin endpoints."
+      }
+    },
+    "users": {
+      "eyebrow": "Member Operations",
+      "title": "User management",
+      "description": "Filter and review all members, their subscription tier, and account activity.",
+      "summary": {
+        "totalMembers": "Total members",
+        "totalMembersHint": "Total records reported by the current users query.",
+        "visibleMembers": "Visible on this page",
+        "visibleMembersHint": "Members returned for the current filter set.",
+        "activeAccounts": "Active accounts",
+        "activeAccountsHint": "Active members in the current results window.",
+        "proPlans": "Pro plans",
+        "proPlansHint": "Members on the Pro tier in the current page."
+      },
+      "tableTitle": "Members list",
+      "tableDescription": "Search by name, filter by account status, and open a member record for full detail.",
+      "filters": {
+        "searchPlaceholder": "Search members by name",
+        "allStatuses": "All statuses",
+        "perPage": "{count} per page"
+      },
+      "columns": {
+        "member": "Member",
+        "status": "Status",
+        "plan": "Plan",
+        "source": "Source",
+        "trialEnds": "Trial ends",
+        "billingCycle": "Billing",
+        "searches": "Searches",
+        "joined": "Joined",
+        "actions": "Actions"
+      },
+      "loading": "Loading users...",
+      "empty": "No members matched the current filters.",
+      "planFallback": "No subscription",
+      "subscriptionUnavailable": "Subscription details unavailable",
+      "noActiveSubscription": "No active plan",
+      "noActivePlan": "No active plan",
+      "trialBillingCycle": "Trial"
+    },
+    "memberDetails": {
+      "eyebrow": "Member Detail",
+      "title": "Member details for {name}",
+      "description": "Review subscription state, account health, and recent searches before taking action.",
+      "backToUsers": "Back to users",
+      "loadingTitle": "Loading member",
+      "loadingDescription": "Fetching member profile and recent searches.",
+      "loading": "Loading member details...",
+      "errorTitle": "Unable to load member",
+      "errorDescription": "The requested member profile could not be fetched.",
+      "metrics": {
+        "credits": "Credits",
+        "monitors": "Monitors",
+        "searches": "Total searches",
+        "referrals": "Referrals"
+      },
+      "metricHints": {
+        "credits": "Current available credits on the account.",
+        "monitors": "Monitoring jobs currently tied to this member.",
+        "searches": "Lifetime search count returned by the admin API.",
+        "referrals": "Successful referrals linked to the member code."
+      },
+      "profileTitle": "Profile summary",
+      "profileDescription": "Identity, approval state, and primary account metadata.",
+      "fields": {
+        "contact": "Contact",
+        "jobTitle": "Job title",
+        "affiliation": "Affiliation",
+        "country": "Country",
+        "joined": "Joined",
+        "referralCode": "Referral code",
+        "subscriptionId": "Subscription ID"
+      },
+      "unavailable": "Unavailable",
+      "searchesTitle": "Recent searches",
+      "searchesDescription": "Paginated search history for this member from the admin user searches endpoint.",
+      "searchColumns": {
+        "image": "Image",
+        "status": "Status",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "searchesLoading": "Loading member searches...",
+      "searchesEmpty": "This member has no searches in the current range.",
+      "subscriptionTitle": "Subscription",
+      "subscriptionDescription": "Billing identifiers and status for the linked subscription record.",
+      "subscriptionFields": {
+        "plan": "Plan",
+        "status": "Status",
+        "source": "Source",
+        "billingCycle": "Billing cycle",
+        "trialDaysLeft": "Trial days left",
+        "trialEndDate": "Trial end date"
+      },
+      "trialDaysLeftValue": "{count} days left",
+      "trialHelperText": "Trial ends unless upgraded to a paid plan.",
+      "trialExpired": "Trial expired",
+      "noActiveSubscription": "No active plan",
+      "noActivePlan": "No active plan",
+      "trialBillingCycle": "Trial",
+      "adminActionsTitle": "Admin actions",
+      "adminActionsDescription": "Deactivate the member account when moderation or policy action is required.",
+      "deactivateReasonLabel": "Deactivation reason",
+      "deactivateReasonPlaceholder": "Optional note for why the account is being deactivated.",
+      "deactivateButton": "Deactivate member",
+      "alreadyInactive": "Member already inactive"
+    },
+    "searches": {
+      "eyebrow": "Search Operations",
+      "title": "Searches",
+      "description": "Inspect uploaded search jobs across all members and filter by operator-visible status.",
+      "summary": {
+        "total": "Total searches",
+        "totalHint": "Total records reported by the current searches query.",
+        "completed": "Completed in page",
+        "completedHint": "Completed search jobs inside the current page.",
+        "averageDiscoveries": "Average discoveries",
+        "averageDiscoveriesHint": "Average discovery count for the visible searches.",
+        "uploaders": "Unique uploaders",
+        "uploadersHint": "Members represented in the current result window."
+      },
+      "tableTitle": "Search history",
+      "tableDescription": "Filter by uploader name or search status and jump into the uploader account when needed.",
+      "filters": {
+        "memberPlaceholder": "Filter by uploader name",
+        "allStatuses": "All statuses"
+      },
+      "columns": {
+        "file": "File",
+        "uploader": "Uploader",
+        "status": "Status",
+        "discoveries": "Discoveries",
+        "uploadDate": "Upload date",
+        "actions": "Actions"
+      },
+      "loading": "Loading searches...",
+      "empty": "No searches matched the current filters."
+    },
+    "searchDetails": {
+      "eyebrow": "Search Detail",
+      "title": "Search details",
+      "description": "Review the selected search record, uploader information, rescan schedule, and all associated result entries.",
+      "backToSearches": "Back to searches",
+      "loadingTitle": "Loading search",
+      "loadingDescription": "Fetching the selected search document and related results.",
+      "loading": "Loading search details...",
+      "errorTitle": "Unable to load search",
+      "errorDescription": "The requested search record could not be fetched.",
+      "metrics": {
+        "results": "Results",
+        "reviewed": "Reviewed",
+        "pendingReview": "Pending review",
+        "status": "Search status"
+      },
+      "metricHints": {
+        "results": "Total result records linked to this search.",
+        "reviewed": "Reviewed results in the current page.",
+        "pendingReview": "Results in the current page still waiting for admin review.",
+        "status": "Current lifecycle state of the selected search."
+      },
+      "overviewTitle": "Search overview",
+      "overviewDescription": "Primary metadata returned by the admin search details endpoint.",
+      "fields": {
+        "uploader": "Uploader",
+        "uploaderEmail": "Uploader email",
+        "uploadedAt": "Uploaded at",
+        "nextRescan": "Next rescan",
+        "lastRescan": "Last rescan"
+      },
+      "searchImageAlt": "Search image",
+      "resultsTitle": "Matched results",
+      "resultsDescription": "Paginated result entries associated with this search. Total records: {total}.",
+      "resultsPerPageLabel": "Results per page",
+      "resultsLoading": "Loading search results...",
+      "resultsEmpty": "No result records were returned for this search.",
+      "resultTitle": "Result {index}",
+      "resultImageAlt": "Result image",
+      "resultFields": {
+        "reviewStatus": "Review status",
+        "reviewedAt": "Reviewed at",
+        "details": "Details"
+      },
+      "resultDetailsEmpty": "No detail fields are available for this result."
+    },
+    "apiUsage": {
+      "eyebrow": "Derived Usage",
+      "title": "API usage",
+      "description": "Operational usage metrics derived from the documented admin dashboard and searches endpoints.",
+      "metrics": {
+        "totalRequests": "Total requests",
+        "successRate": "Success rate",
+        "averageDiscoveries": "Average discoveries",
+        "activeMembers": "Active members"
+      },
+      "metricHints": {
+        "totalRequests": "Total analyzed content returned by the dashboard endpoint.",
+        "successRate": "Analysis complete divided by total content.",
+        "averageDiscoveries": "Average discovery count across the recent search sample.",
+        "activeMembers": "Member count reported by the dashboard endpoint."
+      },
+      "breakdownTitle": "Status breakdown",
+      "breakdownDescription": "Distribution of recent search records by admin-visible processing state.",
+      "loading": "Loading API usage insights...",
+      "empty": "No usage insight data is available yet.",
+      "topUploadersTitle": "Top uploaders",
+      "topUploadersDescription": "Members with the highest search volume in the current recent-search sample.",
+      "topUploaderHint": "Recent uploads in sampled search history",
+      "snapshotTitle": "Request snapshot",
+      "snapshotDescription": "Key counters from the dashboard response for fast operator review.",
+      "snapshot": {
+        "searchesToday": "Searches today",
+        "completed": "Completed",
+        "pending": "Pending",
+        "failed": "Failed"
+      },
+      "methodologyTitle": "Methodology",
+      "methodologyDescription": "How this page is calculated using the available admin API surface.",
+      "methodologyCopy": "Usage metrics combine the admin dashboard response with the latest {count} search records because the documented admin API does not expose a dedicated usage analytics endpoint.",
+      "generatedAt": "Generated at"
+    },
+    "analytics": {
+      "title": "Website analytics",
+      "description": "Traffic intelligence powered by Google Analytics 4 for public website behavior and engagement.",
+      "loading": "Loading website analytics...",
+      "filters": {
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days",
+        "last90Days": "Last 90 days"
+      },
+      "metrics": {
+        "totalVisitors": "Total visitors",
+        "uniqueVisitors": "Unique visitors",
+        "activeVisitors": "Active visitors",
+        "pageViews": "Page views",
+        "sessions": "Sessions",
+        "engagementRate": "Engagement rate",
+        "bounceRate": "Bounce rate",
+        "averageSessionDuration": "Avg. session duration"
+      },
+      "hints": {
+        "totalVisitors": "All visitors in the selected date range.",
+        "uniqueVisitors": "First-time users captured in the selected period.",
+        "activeVisitors": "Active users in the selected date range from GA4 reports.",
+        "pageViews": "Total tracked page views for public pages.",
+        "sessions": "Total sessions initiated in the selected date range.",
+        "engagementRate": "Sessions considered engaged by GA4.",
+        "bounceRate": "Sessions with no meaningful engagement event.",
+        "averageSessionDuration": "Average duration of all sessions."
+      },
+      "charts": {
+        "dailyVisitorsTitle": "Daily visitors and sessions",
+        "dailyVisitorsDescription": "Trend of visitors and sessions over time.",
+        "trafficGrowthTitle": "Traffic growth",
+        "trafficGrowthDescription": "Day-over-day visitor growth trend.",
+        "trafficSourcesTitle": "Traffic sources",
+        "trafficSourcesDescription": "Acquisition channel split by session volume.",
+        "deviceUsageTitle": "Device usage",
+        "deviceUsageDescription": "Session distribution across device categories.",
+        "topCountriesTitle": "Top countries",
+        "topCountriesDescription": "Countries generating the highest visitor traffic.",
+        "topCitiesTitle": "Top cities",
+        "topCitiesDescription": "Cities generating the highest visitor traffic.",
+        "browserUsageTitle": "Browser analytics",
+        "browserUsageDescription": "Session distribution across major browsers.",
+        "topPagesTitle": "Top pages",
+        "topPagesDescription": "Most viewed pages across the selected period."
+      },
+      "sourceCategories": {
+        "organicSearch": "Organic Search",
+        "direct": "Direct",
+        "social": "Social",
+        "referral": "Referral"
+      },
+      "deviceCategories": {
+        "mobile": "Mobile",
+        "desktop": "Desktop",
+        "tablet": "Tablet"
+      },
+      "browserCategories": {
+        "chrome": "Chrome",
+        "safari": "Safari",
+        "edge": "Edge",
+        "firefox": "Firefox"
+      },
+      "panels": {
+        "topContentTitle": "Most viewed content",
+        "topContentDescription": "Content/pages where users spend the most time.",
+        "landingPagesTitle": "Top landing pages",
+        "landingPagesDescription": "Entry pages with strongest engagement and session quality.",
+        "audienceBreakdownTitle": "Audience analytics",
+        "audienceBreakdownDescription": "Breakdown by browser, operating system, and top referrers.",
+        "liveActiveVisitorsTitle": "Live active users",
+        "liveActiveVisitorsDescription": "Realtime active users snapshot by location, device, browser, and currently active pages."
+      },
+      "realtime": {
+        "totalActiveUsers": "Active users now",
+        "locationCountries": "Top countries",
+        "locationCities": "Top cities",
+        "devices": "Devices",
+        "browsers": "Browsers",
+        "activePages": "Active pages",
+        "noActiveUsers": "No realtime active users right now."
+      },
+      "table": {
+        "views": "Views",
+        "sessions": "Sessions",
+        "engagement": "Engagement",
+        "bounce": "Bounce",
+        "duration": "Avg duration"
+      },
+      "audience": {
+        "browsers": "Browsers",
+        "operatingSystems": "Operating systems",
+        "referrers": "Referrers"
+      },
+      "empty": "No website analytics data available for this period.",
+      "legends": {
+        "visitors": "Visitors",
+        "sessions": "Sessions",
+        "growthRate": "Growth rate"
+      }
+    }
+  },
+  "Landing": {
+    "section1": {
+      "title": "Protect your ideas and\nbrand growth with IpHint.",
+      "subtitle": "Never lose sight of your visual assets with our non-stop tracking system",
+      "description": "Raw data alone is meaningless. We prioritize precision detection on high-risk global sites, reporting only the essential information that directly impacts your rights.",
+      "primaryCta": "Start for free",
+      "secondaryCta": "Contact Sales",
+      "imageAlt": "Hero illustration"
+    },
+    "section2": {
+      "title": "Accessible security service for everyone, regardless of scale",
+      "features": {
+        "searchEngines": {
+          "title": "Search Engines",
+          "description": "Data-driven image detection across major search engines"
+        },
+        "socialMedia": {
+          "title": "Social Media",
+          "description": "AI-powered image matching and theft detection on SNS"
+        },
+        "harmfulSites": {
+          "title": "Harmful Sites",
+          "description": "Real-time tracking of 50,000+ illegal channels"
+        },
+        "streamingSites": {
+          "title": "Streaming Sites",
+          "description": "Proactive monitoring of video and streaming platforms"
+        },
+        "deepWeb": {
+          "title": "Deep Web",
+          "description": "Tracing leaked assets in closed web communities"
+        }
+      }
+    },
+    "section3": {
+      "title": "Try Monitoring",
+      "description": "Check for leaks across the web and take appropriate action based on the results!",
+      "features": {
+        "deepWebDetection": {
+          "title": "Deep Web Detection",
+          "description": "Scans everything from adult sites and harmful sites to streaming sites that general search engines cannot find."
+        },
+        "highAccuracy": {
+          "title": "High Accuracy",
+          "description": "Our AI-based image matching technology accurately identifies modified images and prevents the display of similar content."
+        },
+        "alertService": {
+          "title": "Alert Service",
+          "description": "No more hassle of searching manually. Get notified when new matches are found so you can respond quickly."
+        },
+        "secureStorage": {
+          "title": "Secure Storage",
+          "description": "Uploaded images are encrypted and stored securely, with personal information protection as our top priority."
+        }
+      },
+      "footerQuestion": "Do you need enterprise-grade data residency?",
+      "footerCta": "Contact Sales"
+    },
+    "section4": {
+      "title": "Creators and Brands",
+      "description": "We grow together with influencers, artists, and creators from all over the world. Check out the results achieved by teams using IPHINT.",
+      "items": {
+        "artist": {
+          "title": "Artist",
+          "heading": "Drawing, Illustration, Webtoon, Character, Digital Art",
+          "description": "We continuously monitor thousands of platforms daily on your behalf and provide reports on how your works are being used."
+        },
+        "model": {
+          "title": "Model",
+          "heading": "Fashion, Photography, Runway, Commercial",
+          "description": "Protect your likeness and modeling portfolio across global campaigns and digital platforms."
+        },
+        "creator": {
+          "title": "Creator",
+          "heading": "Video, Music, Podcasting, Streaming",
+          "description": "Ensure your content remains yours. Track your creative output across all major media platforms."
+        },
+        "ecommerce": {
+          "title": "E-commerce",
+          "heading": "Brands, Retail, Online Stores",
+          "description": "Safeguard your product imagery and brand assets from unauthorized use in the digital marketplace."
+        }
+      },
+      "viewSlide": "View {title}",
+      "goToSlide": "Go to slide {index}"
+    },
+    "section5": {
+      "title": "Why they trust us",
+      "subtitle": "5.5 hours saved in imposter tracking.",
+      "testimonials": {
+        "artist": {
+          "quote": "Reduced monitoring from 12 hours to 30 mins.",
+          "content": "It was nearly impossible to manually find all the accounts that stole my drawings and posted them as their own. This service gives me true peace of mind.",
+          "author": "Artist (Webtoon)",
+          "subtext": "Over 30 serialized works"
+        },
+        "ceo": {
+          "quote": "4 hours of daily monitoring, now automated.",
+          "content": "I found shops selling my products just by changing the packaging. I was also worried about the increasing number of scam sites stealing my model photos and detail pages.",
+          "author": "CEO, Apparel Online Store",
+          "subtext": "Annual Sales: $11M"
+        },
+        "influencer": {
+          "quote": "No more 30-hour monthly search struggles.",
+          "content": "I used to drain so much energy tracking my photos being used in illegal ads or ghost accounts. I'm so grateful to have solved this with such an affordable subscription.",
+          "author": "Influencer & Model",
+          "subtext": "300K Followers"
+        }
+      },
+      "swipeHint": "Swipe to explore more stories",
+      "scrollLeft": "Scroll testimonials left",
+      "scrollRight": "Scroll testimonials right"
+    },
+    "section6": {
+      "title": "Blog",
+      "posts": {
+        "1": {
+          "title": "Content IP theft is rarely absent; it is simply undiscovered."
+        },
+        "2": {
+          "title": "Does AI Art Have No Copyright? The Moment Your Brand Becomes 'Public Property'"
+        },
+        "3": {
+          "title": "Used One Image and Got a Settlement Demand? Surviving the 'Predatory Lawsuit' Trap"
+        },
+        "4": {
+          "title": "Your Brand as a Target: The K-Content Crisis on Ali and Temu"
+        }
+      }
+    },
+    "section7": {
+      "title": "Press",
+      "articles": {
+        "1": {
+          "source": "The New York Times",
+          "title": "Global war against counterfeit goods: Use IpHint (iphint.com) to ..."
+        },
+        "2": {
+          "source": "The New York Times",
+          "title": "Global war against counterfeit goods: Use IpHint (iphint.com) to ..."
+        },
+        "3": {
+          "source": "The New York Times",
+          "title": "Global war against counterfeit goods: Use IpHint (iphint.com) to ..."
+        }
+      }
+    },
+    "section8": {
+      "titleBeforeBrand": "Start monitoring with ",
+      "brand": "IpHint",
+      "titleAfterBrand": "",
+      "primaryCta": "Start Now",
+      "secondaryCta": "Contact Sales"
+    }
+  },
+  "header": {
+    "pricing": "Pricing",
+    "service": "Service",
+    "contactUs": "Contact Us",
+    "getStarted": "Get Started Now",
+    "signIn": "Sign in",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "selectLanguageAria": "Select language",
+    "homeAria": "IPHINT home",
+    "navigationAria": "Main navigation"
+  },
+  "Contact": {
+    "title": "Contact",
+    "description": "We will prepare a customized plan and get back to you shortly!",
+    "submitErrorRequired": "Please fill in Full Name, Work Email, and Inquiry Message.",
+    "submitSuccess": "Thanks for contacting us. Your inquiry was sent successfully. Redirecting to home...",
+    "submitSuccessModal": "Thanks for contacting us. Your inquiry was sent successfully.",
+    "submitError": "Failed to send your inquiry. Please try again.",
+    "closeDialogAria": "Close contact dialog",
+    "labels": {
+      "fullName": "Full Name",
+      "companyName": "Company Name",
+      "workEmail": "Work Email",
+      "phoneNumber": "Phone Number",
+      "inquiryMessage": "Inquiry Message"
+    },
+    "placeholders": {
+      "fullName": "Example: John Doe",
+      "companyName": "Example: UTRBOX Inc.",
+      "workEmail": "Example: john@company.com",
+      "phoneNumber": "Example: +82 10-1234-5678",
+      "inquiryMessage": "Example: We need a customized monitoring plan for 50+ assets and monthly compliance reports."
+    },
+    "inquiryLimit": "Max 5000 characters",
+    "characterCount": "{count}/{limit}",
+    "marketingConsentTitle": "Marketing Consent (Optional)",
+    "consentEmail": "I agree to receive marketing emails.",
+    "consentSms": "I agree to receive SMS/text notifications.",
+    "consentServiceUpdates": "I agree to receive service update notifications.",
+    "consentEventsPromotions": "I agree to receive event and promotion notifications.",
+    "consentHelp": "Consent is optional and can be withdrawn at any time.",
+    "submit": "Send Inquiry",
+    "submitLoading": "Sending..."
+  },
+  "AboutPage": {
+    "eyebrow": "About Us",
+    "title": "About IPHINT",
+    "subtitle": "Built by Engineers. Designed for Everyone.",
+    "illustrationSrc": "/login.svg",
+    "illustrationAlt": "IPHINT login illustration",
+    "sections": [
+      {
+        "title": "Built by Engineers. Designed for Everyone.",
+        "paragraphs": [
+          "IPHINT was founded by two brothers, both computer engineers.",
+          "For a long time, we observed a recurring problem: powerful technologies and tools existed, but most were built exclusively for enterprises, making them too complex and expensive for individuals. Image theft detection was no exception.",
+          "The sophisticated technology was there, but the number of people who could actually use it was extremely limited."
+        ],
+        "callout": "Why can't individuals have access to this technology?"
+      },
+      {
+        "title": "Making Enterprise Technology Accessible",
+        "paragraphs": [
+          "IPHINT aims to bring enterprise-level image detection technology to everyone. Our system is designed to protect your content without requiring complex setups or specialized technical knowledge.",
+          "While we make the technology simple to use, we never compromise on its performance or core capabilities."
+        ]
+      },
+      {
+        "title": "Built by Engineers Who Understand the Problem",
+        "paragraphs": [
+          "We didn't just build a service; we understood the problem and engineered the solution.",
+          "We have directly researched how images are modified, how they spread, and why traditional methods fail to detect them. As a result, we have built a detection system that works in real-world environments, going far beyond a simple search."
+        ]
+      },
+      {
+        "title": "From Tools to Infrastructure",
+        "paragraphs": [
+          "IPHINT is more than just a tool or a feature. It is an infrastructure that empowers everyone, from individuals to corporations, to protect their image IP."
+        ]
+      },
+      {
+        "title": "Our Mission",
+        "paragraphs": [
+          "Our mission is to bridge the technology gap. We exist to make technologies that were once reserved for large enterprises available to individuals. Through our service, creators and brands of all sizes can easily access digital content IP protection."
+        ]
+      }
+    ],
+    "teamTitle": "Our Team",
+    "teamMembers": [
+      {
+        "role": "Director",
+        "name": "Hyung-tae Kim"
+      },
+      {
+        "role": "UI/UX Designer",
+        "name": "Da-hyeon Kang"
+      },
+      {
+        "role": "AI Software",
+        "name": "Mohaiminul Islam"
+      },
+      {
+        "role": "Development",
+        "name": "Raju Ahmmed"
+      },
+      {
+        "role": "Information Security",
+        "name": "Seong-tae Kim"
+      }
+    ],
+    "backToMain": "Back to Main"
+  },
+  "Footer": {
+    "companyHeading": "IpHint",
+    "policyHeading": "Terms & Policies",
+    "links": {
+      "research": "Research",
+      "api": "API",
+      "about": "About",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "usagePolicy": "Usage Policy",
+      "refundPolicy": "Refund Policy"
+    },
+    "copyright": "©2026 UTRBOX. All Rights Reserved.",
+    "languages": {
+      "kr": "Korean",
+      "en": "English"
+    },
+    "selectLanguageAria": "Select language",
+    "homeAria": "IPHINT home"
+  },
+  "services": {
+    "about": {
+      "title": "About IpHint",
+      "subtitle": "The easiest way to monitor your content."
+    },
+    "commonReality": {
+      "title": "Common Reality",
+      "subtitle": "Digital content, Fast to infringe, easy to steal.",
+      "stats": {
+        "unauthorizedCopies": {
+          "value": "85%",
+          "label": "Unauthorized\nCopies"
+        },
+        "imagesShared": {
+          "value": "2.5B",
+          "label": "Images\nShared Daily"
+        },
+        "manualTracking": {
+          "value": "3%",
+          "label": "Manual Tracking\nLimit"
+        },
+        "unprotectedContent": {
+          "value": "97%",
+          "label": "Unprotected\nContent"
+        }
+      },
+      "infoBoxTitle": "85% of images online are pirated.",
+      "infoBoxBody": "As social media and web platforms explode, tracking where and how your work is stolen has become virtually impossible. While only 3% of creators take action against infringement, the remaining 97% are left unprotected and exposed to theft.",
+      "source": "ipHint Internal Analysis Source: Global Image Theft Report & Internal Analysis"
+    },
+    "ourSolution": {
+      "title": "Our Solution",
+      "subtitle": "Securing Brands and Creators Against Digital Risks",
+      "features": {
+        "brandProtection": "Brand\nProtection",
+        "contentProtection": "Content\nProtection",
+        "infringementPrevention": "Infringement\nPrevention",
+        "copyrightManagement": "Copyright\nManagement"
+      },
+      "infoBoxTitle": "Identify every modification with direct image data analysis.",
+      "infoBoxBody": "In a sea of digital content, we provide the technical edge to secure your brand and creative rights."
+    },
+    "ourService": {
+      "title": "Our Service",
+      "subtitle": "Digital Content IP Protection & Monitoring Tool",
+      "features": {
+        "contentRegistration": "Content\nRegistration",
+        "matchDetection": "Match\nDetection",
+        "dashboardReview": "Dashboard\nReview",
+        "instantAlert": "Instant\nAlert"
+      },
+      "bullets": [
+        "Monitoring technology used to be an exclusive, high-cost service available only to large corporations.",
+        "Individual creators and small-to-medium brands have faced significant entry barriers in protecting their own rights.",
+        "Now, our scalable monitoring technology makes it possible to protect intellectual property regardless of your business size."
+      ],
+      "infoBoxTitle": "top manual searches. Start protecting your work.",
+      "infoBoxBody": "Our technology uses digital fingerprinting to detect even modified or altered content. With 24/7 automated monitoring, we alert you the moment infringement happensâ€”keeping you one step ahead in securing your rights."
+    }
+  },
+  "Pricing": {
+    "heading": "Pricing",
+    "subheading": "Autonomy for all. Choose the best plan for you.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "sale": "Sale 40%",
+    "getStarted": "Get Started",
+    "contact": "Contact",
+    "perMonth": "/Month",
+    "perUnit": "per unit",
+    "billedMonthly": "Billed monthly at",
+    "starter": {
+      "name": "STARTER",
+      "tagline": "Ideal for Individuals & Freelancers",
+      "subtext": "Register for free with a referral code",
+      "features": [
+        "Monitor up to 10 registered items",
+        "Up to 1,000 cumulative discovery alerts",
+        "Automatic duplicate content filter",
+        "Content exposure risk analysis"
+      ]
+    },
+    "pro": {
+      "name": "PRO",
+      "tagline": "Ideal for Creators & Influencers",
+      "subtext": "About half the price of Starter",
+      "features": [
+        "Includes all STARTER features",
+        "Monitor up to 50 registered items",
+        "Up to 5,000 cumulative discovery alerts",
+        "PDF report generation"
+      ]
+    },
+    "premium": {
+      "name": "PREMIUM",
+      "tagline": "Ideal for Businesses & Agencies",
+      "subtext": "Lowest price among all plans",
+      "footerNote": "Inquire about Large Enterprise plans",
+      "features": [
+        "Includes all PRO features",
+        "Monitor up to 100 registered items",
+        "Unlimited discovery alerts",
+        "1:1 dedicated manager assignment"
+      ]
+    },
+    "comparison": {
+      "heading": "Plan Comparison",
+      "planNames": ["STARTER", "PRO", "PREMIUM"],
+      "rows": [
+        { "label": "Billed Yearly (Monthly)", "starter": "$5.30", "pro": "$13.50", "premium": "$19.60" },
+        { "label": "Billed Monthly", "starter": "$6.60", "pro": "$19.30", "premium": "$32.70" },
+        { "label": "Yearly Discount", "starter": "20%", "pro": "30%", "premium": "40%" },
+        { "label": "Contents Monitored", "starter": "Up to 10", "pro": "Up to 50", "premium": "Up to 100" },
+        { "label": "Alert Limited", "starter": "1,000 alerts", "pro": "5,000 alerts", "premium": "Unlimited" },
+        { "label": "Cost per Item (Yearly)", "starter": "$0.53", "pro": "$0.27", "premium": "$0.20" }
+      ]
+    },
+    "faq": {
+      "heading": "FAQ",
+      "items": [
+        {
+          "question": "How does monitoring work?",
+          "answer": "Our intelligent AI scans the entire web 24/7 without gaps based on your registered images. As soon as a similar image is discovered, it undergoes a detailed analysis and is recorded on your dashboard, with real-time alerts to help you take immediate action. For optimized data management, all discovered data is kept securely for 30 days."
+        },
+        {
+          "question": "What happens when I reach my cumulative discovery limit?",
+          "answer": "Once the limit is exceeded, monitoring and alerts for new discoveries will be paused. To continue using the service without interruption, you can upgrade to a higher plan or wait until your limit resets on the next billing date. (The Premium plan offers unlimited access with no discovery limits!)"
+        },
+        {
+          "question": "Can I change my plan in the middle of a subscription?",
+          "answer": "Yes, you can change your plan at any time! When upgrading, you only pay the difference for the remaining period and can enjoy the expanded benefits immediately. Downgrades will take effect starting from the next billing cycle after the current one ends."
+        },
+        {
+          "question": "What happens if I cancel during an annual subscription?",
+          "answer": "Even after canceling, you can continue to use all features normally until the end of your current pre-paid subscription period. Your subscription will simply not renew for the following year. However, since annual plans include a discount, mid-term refunds may be limited according to our Terms of Service."
+        },
+        {
+          "question": "What happens to my registered images if I delete my account?",
+          "answer": "Upon account deletion, all registered images and monitoring data are immediately and permanently destroyed to protect your personal information and valuable creative works. Since deleted data cannot be recovered, we recommend downloading any necessary reports before closing your account."
+        }
+      ]
+    },
+    "referral": {
+      "title": "Do you have a referral code?",
+      "description": "Enter the code during sign-up to get an instant free trial.",
+      "steps": ["Get Code", "Enter during Sign-Up", "1 Month Free", "Select Plan"]
+    }
+  },
+  "UserPanel": {
+    "reports": {
+      "title": "Reports",
+      "description": "Generate branded PDF evidence reports from your reverse image search results.",
+      "lockedTitle": "PDF reports are locked on your current plan",
+      "lockedDescription": "Upgrade your plan to unlock report preview and download. Pro and Premium include full PDF exports.",
+      "lockedCta": "Upgrade plan to unlock this feature",
+      "emptyTitle": "No reports yet",
+      "emptyDescription": "Run an image search to generate your first report.",
+      "cardTitle": "Search Report",
+      "download": "Download",
+      "generating": "Generating\u2026",
+      "preview": "Preview",
+      "opening": "Opening\u2026",
+      "match": "match",
+      "matches": "matches",
+      "page": "page",
+      "pages": "pages",
+      "searchImageAlt": "Search image",
+      "modalTitle": "Feature unavailable on current plan",
+      "modalDescription": "PDF reports are available on Pro and Premium. Upgrade now to export and share professional reports.",
+      "maybeLater": "Maybe later",
+      "upgradePlan": "Upgrade plan"
+    },
+    "referral": {
+      "title": "Referral Program",
+      "description": "Share your referral link anytime. Refer 5 users who sign up and log in to unlock permanent PDF & Reports access.",
+      "milestoneTitle": "Milestone Reward",
+      "milestoneDescription": "Refer {target} users \u2192 Permanent PDF & Reports access",
+      "milestoneUnlocked": "Unlocked \u2713",
+      "progress": "Progress",
+      "totalSignups": "Total signups",
+      "completedReferrals": "Completed referrals",
+      "rewardsEarned": "Rewards earned",
+      "referralLinkTitle": "Your Referral Link",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "codeLabel": "Code:",
+      "codeNote": "New users who sign up with your link get 1 month free Premium.",
+      "referralStatusTitle": "Referral Status",
+      "referralStatusNote": "Referral link is always active. Completed referrals are tracked continuously.",
+      "howItWorksTitle": "How It Works",
+      "step1": "Share your referral link. Friends who sign up using your link get 1 month free Premium.",
+      "step2": "A referral is \"completed\" only when the new user logs in for the first time.",
+      "step3": "Get 5 completed referrals to permanently unlock PDF & Reports access."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your profile, security, and notification channels from one place.",
+      "unreadLabel": "Unread notifications:",
+      "tabProfile": "Profile & Security",
+      "tabNotifications": "Notifications",
+      "tabAppearance": "Appearance",
+      "profileTitle": "Profile",
+      "fullName": "Full Name",
+      "email": "Email",
+      "organization": "Organization",
+      "jobTitle": "Job Title",
+      "country": "Country",
+      "phoneNumber": "Phone Number",
+      "roleLabel": "Role:",
+      "joinedLabel": "Joined:",
+      "saving": "Saving...",
+      "saveProfile": "Save Profile",
+      "notificationsTitle": "Notifications & Weekly Monitoring",
+      "notificationsDescription": "Monitoring re-scan runs automatically every 7 days for uploaded images.",
+      "emailNotifications": "Email notifications",
+      "inAppNotifications": "In-app notifications",
+      "weeklyRescan": "Weekly re-scan on uploaded images",
+      "notifyMatches": "Notify only when new matches appear",
+      "digestFrequency": "Digest frequency",
+      "instant": "Instant",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "savePreferences": "Save Preferences",
+      "securityTitle": "Security",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "updating": "Updating...",
+      "updatePassword": "Update Password",
+      "inboxTitle": "Notification Inbox",
+      "unreadCount": "Unread: {count}",
+      "markAllRead": "Mark all read",
+      "deleteAll": "Delete all",
+      "searchAlerts": "Search alerts",
+      "search": "Search",
+      "all": "All",
+      "unread": "Unread",
+      "refresh": "Refresh",
+      "noNotifications": "No notifications found for this filter.",
+      "markRead": "Mark read",
+      "delete": "Delete",
+      "deleteConfirm": "Delete?",
+      "no": "No",
+      "yes": "Yes",
+      "appearanceTitle": "Appearance",
+      "fontFamilyTitle": "Font Family",
+      "fontFamilyDescription": "Font family is applied automatically by language across the entire app.",
+      "fontSizeTitle": "Font Size",
+      "fontSizeDescription": "Scales text across the entire app.",
+      "previewLabel": "Preview",
+      "fontNote": "English uses Noto Sans. Korean uses Pretendard.",
+      "passwordMismatch": "New password and confirmation do not match.",
+      "passwordTooShort": "New password must be at least 8 characters.",
+      "profileSaved": "Profile updated successfully.",
+      "profileSaveFailed": "Could not update profile.",
+      "preferencesSaved": "Notification preferences saved.",
+      "preferencesSaveFailed": "Could not update notification preferences.",
+      "passwordSaved": "Password updated successfully.",
+      "passwordSaveFailed": "Could not update password.",
+      "notificationsFailed": "Failed to load notifications.",
+      "notificationDeleted": "Notification deleted.",
+      "notificationDeleteFailed": "Could not delete notification.",
+      "allDeleted": "All notifications deleted.",
+      "allDeleteFailed": "Could not delete all notifications.",
+      "searchFailed": "Failed to search notifications.",
+      "openFailed": "Could not open notification.",
+      "markReadFailed": "Could not update notification.",
+      "markAllReadFailed": "Could not mark all notifications as read.",
+      "allMarkedRead": "All notifications marked as read.",
+      "loadFailed": "Failed to load settings"
+    },
+    "billing": {
+      "title": "Billing",
+      "description": "Manage your plan and check out securely with Paddle. Paid plans renew automatically until you cancel them here.",
+      "trialActive": "Pro Trial is active.",
+      "trialDaysLeft": "Pro Trial: {days} {unit} remaining.",
+      "trialConvert": "Subscribe now to convert to a paid Pro subscription immediately.",
+      "pastDueWarning": "Payment failed \u2014 please update your payment method to avoid losing access.",
+      "updatePaymentMethod": "Update Payment Method",
+      "loadingPayment": "Loading...",
+      "pausedBadge": "Paused",
+      "subscriptionPaused": "Your subscription is paused.",
+      "resumeOrExpire": "Resumes or expires on {date}.",
+      "resuming": "Resuming...",
+      "resume": "Resume",
+      "autoRenewOffBadge": "Auto-renew off",
+      "cancellationScheduled": "Cancellation is scheduled for {date}.",
+      "daysRemaining": "{days} {unit} remaining in this billing period.",
+      "resumeAutoRenew": "Resume auto-renew",
+      "cancelledAccess": "Your plan is cancelled. Access continues until {date}.",
+      "resubscribe": "Re-subscribe",
+      "currentPlanLabel": "Current Plan: {name}",
+      "noActivePlan": "No active plan. Buy a plan to continue.",
+      "unlimitedSearches": "Unlimited searches remaining",
+      "searchesRemaining": "{count} searches remaining",
+      "unlimitedAlerts": "Unlimited alerts",
+      "alertsRemaining": "{count} alerts remaining",
+      "uploadsUsed": "Uploads used",
+      "alerts": "Alerts",
+      "unlimited": "Unlimited",
+      "nextBilling": "Next billing: {date}",
+      "autoPayActive": "Auto-pay is active via Paddle and renews every {cycle} until cancelled.",
+      "year": "year",
+      "month": "month",
+      "day": "day",
+      "days": "days",
+      "autoRenewOffAccess": "Auto-renew is off. Access remains active until {date}.",
+      "subscribeToPaidPlan": "Subscribe to a paid plan to manage billing options.",
+      "monthly": "Monthly",
+      "annual": "Annual",
+      "pausing": "Pausing...",
+      "pauseUnavailable": "Unavailable while cancellation is scheduled",
+      "pauseAtPeriodEnd": "Pause at period end",
+      "cancelling": "Cancelling...",
+      "cancellationScheduledBtn": "Cancellation scheduled",
+      "cancelAtPeriodEnd": "Cancel at period end",
+      "perMonth": "per month",
+      "billedAnnually": "billed annually",
+      "billedMonthly": "billed monthly",
+      "trialDaysLeftCard": "{days} {unit} left. Subscribe now to activate paid Pro immediately.",
+      "trialActiveCard": "Trial active. Subscribe now to activate paid Pro immediately.",
+      "autoPayStarts": "Auto-pay starts after checkout and renews {cycle} until you cancel.",
+      "yearly": "yearly",
+      "currentBadge": "Current",
+      "proTrialBadge": "Pro Trial",
+      "currentPlanButton": "Current plan",
+      "billingHistoryTitle": "Billing history",
+      "billingHistoryDescription": "View your past charges and open the Paddle invoice portal to download receipts.",
+      "openInvoicePortal": "Open invoice portal",
+      "openingPortal": "Opening...",
+      "loadingHistory": "Loading billing history...",
+      "noHistory": "No billing records yet.",
+      "dateHeader": "Date",
+      "amountHeader": "Amount",
+      "statusHeader": "Status",
+      "transactionHeader": "Transaction",
+      "checkoutOpened": "Checkout opened for {plan}. Complete payment to activate it.",
+      "subscriptionCancelled": "Your subscription was cancelled.",
+      "subscriptionPausedSuccess": "Your subscription will pause at the end of this billing period.",
+      "subscriptionResumed": "Your subscription has been resumed.",
+      "autoRenewResumed": "Auto-renew has been turned back on.",
+      "checkoutError": "Paddle could not complete the payment. Please try again.",
+      "paddleNotConfigured": "Paid plans on this screen use Paddle checkout. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN to enable paid subscriptions."
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "about": {
+    "title": "IpHint 소개",
+    "subtitle": "콘텐츠를 모니터링하는 가장 쉬운 방법."
+  },
+  "commonReality": {
+    "title": "현실",
+    "subtitle": "디지털 콘텐츠, 침해는 빠르고 도용은 쉽습니다.",
+    "stats": {
+      "unauthorizedCopies": {
+        "value": "85%",
+        "label": "무단\n복제"
+      },
+      "imagesShared": {
+        "value": "2.5B",
+        "label": "일일\n이미지 공유"
+      },
+      "manualTracking": {
+        "value": "3%",
+        "label": "수동 추적\n한계"
+      },
+      "unprotectedContent": {
+        "value": "97%",
+        "label": "미보호\n콘텐츠"
+      }
+    },
+    "infoBoxTitle": "온라인 이미지의 85%가 무단으로 사용됩니다.",
+    "infoBoxBody": "소셜 미디어와 웹 플랫폼이 폭발적으로 증가하면서, 작업물이 언제 어디서 도용되는지 추적하는 것이 사실상 불가능해졌습니다. 창작자 중 단 3%만이 침해에 대해 조치를 취하며, 나머지 97%는 무방비 상태로 도용에 노출되어 있습니다.",
+    "source": "ipHint 내부 분석 출처: 글로벌 이미지 도용 보고서 및 내부 분석"
+  },
+  "ourSolution": {
+    "title": "솔루션",
+    "subtitle": "브랜드와 창작자를 디지털 위험으로부터 보호합니다",
+    "features": {
+      "brandProtection": "브랜드\n보호",
+      "contentProtection": "콘텐츠\n보호",
+      "infringementPrevention": "침해\n방지",
+      "copyrightManagement": "저작권\n관리"
+    },
+    "infoBoxTitle": "직접 이미지 데이터 분석으로 모든 수정 사항을 식별합니다.",
+    "infoBoxBody": "방대한 디지털 콘텐츠 속에서 브랜드와 창작 권리를 보호하기 위한 기술적 우위를 제공합니다."
+  },
+  "ourService": {
+    "title": "서비스",
+    "subtitle": "디지털 콘텐츠 IP 보호 및 모니터링 도구",
+    "features": {
+      "contentRegistration": "콘텐츠\n등록",
+      "matchDetection": "일치\n감지",
+      "dashboardReview": "대시보드\n검토",
+      "instantAlert": "즉시\n알림"
+    },
+    "bullets": [
+      "모니터링 기술은 과거 대기업만 이용할 수 있는 고비용 전용 서비스였습니다.",
+      "개인 창작자와 중소 브랜드는 자신의 권리를 보호하는 데 높은 진입 장벽에 직면해 왔습니다.",
+      "이제 당사의 확장 가능한 모니터링 기술로 기업 규모에 관계없이 지식재산권을 보호할 수 있습니다."
+    ],
+    "infoBoxTitle": "수동 검색의 한계를 넘어. 지금 바로 작업물을 보호하세요.",
+    "infoBoxBody": "디지털 핑거프린팅 기술로 수정되거나 변형된 콘텐츠도 탐지합니다. 24시간 자동 모니터링으로 침해 발생 즉시 알림을 받아 권리 보호에서 항상 한 발 앞서 나갈 수 있습니다."
+  }
+}

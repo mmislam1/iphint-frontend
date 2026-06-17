@@ -1,0 +1,108 @@
+{
+  "badge": "Simple, Transparent Pricing",
+  "heading": "Choose Your Plan",
+  "subheading": "All plans include multi-engine reverse image search with Google Vision and Yandex",
+  "billing": {
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "discount": "Save 20%"
+  },
+  "plans": [
+    {
+      "id": "starter",
+      "name": "Starter",
+      "description": "Perfect for individuals getting started",
+      "price": { "monthly": 29, "annual": 23 },
+      "cta": "Start Free Trial",
+      "ctaVariant": "outline",
+      "features": [
+        "50 searches per month",
+        "Similar image detection",
+        "Duplicate detection",
+        "Basic face match",
+        "Email support",
+        "7-day history",
+        "Web source discovery",
+        "Confidence scoring"
+      ]
+    },
+    {
+      "id": "professional",
+      "name": "Professional",
+      "description": "For creators and influencers",
+      "popular": true,
+      "price": { "monthly": 99, "annual": 79 },
+      "cta": "Get Started",
+      "ctaVariant": "primary",
+      "features": [
+        "200 searches per month",
+        "Everything in Starter",
+        "Advanced face match",
+        "Image monitoring",
+        "Real-time alerts",
+        "Priority support",
+        "Unlimited history",
+        "PDF reports",
+        "Risk analysis",
+        "Domain filtering"
+      ]
+    },
+    {
+      "id": "agency",
+      "name": "Agency",
+      "description": "For agencies and enterprises",
+      "price": { "monthly": 299, "annual": 239 },
+      "cta": "Contact Sales",
+      "ctaVariant": "outline",
+      "features": [
+        "1000 searches per month",
+        "Everything in Professional",
+        "API access",
+        "Multi-user accounts (up to 10)",
+        "Dedicated support",
+        "White-label reports",
+        "Custom integrations",
+        "Priority processing",
+        "SLA guarantee",
+        "Custom monitoring rules"
+      ]
+    }
+  ],
+  "comparison": {
+    "title": "Feature Comparison",
+    "features": [
+      { "label": "Searches per month", "starter": "50", "professional": "200", "agency": "1000" },
+      { "label": "Multi-engine search", "starter": "check", "professional": "check", "agency": "check" },
+      { "label": "Face matching", "starter": "Basic", "professional": "Advanced", "agency": "Advanced" },
+      { "label": "Monitoring", "starter": "none", "professional": "check", "agency": "check" },
+      { "label": "API access", "starter": "none", "professional": "none", "agency": "check" },
+      { "label": "Multi-user", "starter": "none", "professional": "none", "agency": "Up to 10" },
+      { "label": "Support", "starter": "Email", "professional": "Priority", "agency": "Dedicated" }
+    ],
+    "plans": ["Starter", "Professional", "Agency"]
+  },
+  "faq": {
+    "title": "Pricing FAQs",
+    "items": [
+      {
+        "question": "Can I change plans later?",
+        "answer": "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately."
+      },
+      {
+        "question": "What happens if I exceed my search limit?",
+        "answer": "You'll be notified when you're approaching your limit. You can either wait until next month or upgrade to a higher plan."
+      },
+      {
+        "question": "Do you offer annual billing?",
+        "answer": "Yes! Annual billing is available with a 20% discount. Contact sales for more information."
+      },
+      {
+        "question": "Is there a free trial?",
+        "answer": "Yes, all new users get a 7-day free trial of the Professional plan with no credit card required."
+      }
+    ]
+  },
+  "month": "month",
+  "mostPopular": "Most Popular",
+  "perMonth": "/month"
+}
