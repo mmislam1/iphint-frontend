@@ -178,7 +178,7 @@
     "passwordPlaceholder": "Create a password",
     "hasAccountText": "Already have an account?",
     "hasAccountLink": "Log in",
-    "submitSignup": "Start your 7-day free trial",
+    "submitSignup": "Create account",
     "loginTitle": "Log in to your account",
     "continueWithGoogle": "Continue with Google",
     "emailOnlyLabel": "Email",
@@ -1116,8 +1116,8 @@
     },
     "referral": {
       "title": "Do you have a referral code?",
-      "description": "Enter the code during sign-up to get an instant free trial.",
-      "steps": ["Get Code", "Enter during Sign-Up", "1 Month Free", "Select Plan"]
+      "description": "Enter the code during sign-up to activate a 30-day Pro trial after verification.",
+      "steps": ["Get Code", "Enter during Sign-Up", "Activate Pro Trial", "Select Plan"]
     }
   },
   "UserPanel": {
@@ -1158,11 +1158,11 @@
       "copy": "Copy",
       "copied": "Copied!",
       "codeLabel": "Code:",
-      "codeNote": "New users who sign up with your link get 1 month free Premium.",
+      "codeNote": "New users who sign up with your link can activate a 30-day Pro trial.",
       "referralStatusTitle": "Referral Status",
       "referralStatusNote": "Referral link is always active. Completed referrals are tracked continuously.",
       "howItWorksTitle": "How It Works",
-      "step1": "Share your referral link. Friends who sign up using your link get 1 month free Premium.",
+      "step1": "Share your referral link. Friends who sign up using your link can activate a 30-day Pro trial.",
       "step2": "A referral is \"completed\" only when the new user logs in for the first time.",
       "step3": "Get 5 completed referrals to permanently unlock PDF & Reports access."
     },

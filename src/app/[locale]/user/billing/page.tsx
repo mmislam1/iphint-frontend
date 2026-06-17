@@ -55,6 +55,14 @@ interface BillingSnapshot {
       effectiveAt?: string | null;
     } | null;
   } | null;
+  signupOffer?: {
+    eligible: boolean;
+    tier?: PlanTier;
+    source?: 'trial' | 'referral';
+    trialDays?: number;
+    requiresPaddleCheckout?: boolean;
+    priceConfigured?: boolean;
+  };
   plan: Plan;
   credits?: number;
   alertsRemaining?: number;
@@ -97,6 +105,16 @@ const getPaymentErrorMessage = (error: unknown, fallback: string) => {
   }
 
   return getApiErrorMessage(error, fallback);
+};
+
+const getPaddleTransactionId = (event: PaddleEventData) => {
+  const data = (event as { data?: Record<string, unknown> }).data;
+  const transaction =
+    data?.transaction_id ??
+    data?.transactionId ??
+    (data?.transaction as Record<string, unknown> | undefined)?.id;
+
+  return typeof transaction === 'string' && transaction.trim() ? transaction.trim() : undefined;
 };
 
 export default function BillingPage() {
@@ -169,17 +187,18 @@ export default function BillingPage() {
     if (event.name === 'checkout.completed') {
       setCheckoutPlan(null);
       setCheckoutError(null);
+      const transactionId = getPaddleTransactionId(event);
 
       // Immediately sync from Paddle API in case webhook delivery is delayed.
       // This force-writes the paid subscription state to the DB so the UI
       // doesn't remain stuck on the trial badge.
       void (async () => {
         try {
-          await apiClient.post('/billing/sync', {});
+          await apiClient.post('/billing/sync', transactionId ? { transactionId } : {});
         } catch {
           // Non-fatal — polling below will still refresh via the standard endpoint.
         }
-        // Poll until subscription is active and Paddle-managed
+        // Poll until backend confirms usable Paddle-managed access.
         let attempts = 0;
         const poll = () => {
           if (attempts >= 12) return;
@@ -187,7 +206,7 @@ export default function BillingPage() {
           pollTimerRef.current = setTimeout(async () => {
             const result = await dispatch(fetchBillingPageData());
             const sub = (result as { payload?: { snapshot?: BillingSnapshot | null } }).payload?.snapshot?.subscription;
-            if (sub?.status === 'active' && sub?.paddleManaged) return;
+            if (sub?.hasAccess && sub?.paddleManaged) return;
             poll();
           }, 2500);
         };
@@ -208,6 +227,13 @@ export default function BillingPage() {
   }, [dispatch, t]);
 
   const currentSubscription = snapshot?.subscription ?? null;
+  const signupOffer = snapshot?.signupOffer ?? null;
+  const canActivateSignupOffer =
+    !currentSubscription?.hasAccess &&
+    signupOffer?.eligible === true &&
+    signupOffer?.tier === 'pro' &&
+    signupOffer?.requiresPaddleCheckout === true &&
+    signupOffer?.priceConfigured === true;
   const hasEffectivePlan =
     !!currentSubscription &&
     (currentSubscription.hasAccess === true || ['active', 'trialing', 'past_due'].includes(currentSubscription.status));
@@ -279,6 +305,11 @@ export default function BillingPage() {
   const getPlanCtaLabel = (planTier: PlanTier, isWorking: boolean) => {
     if (isWorking) return isKoreanLocale ? '처리 중...' : 'Processing...';
 
+    if (canActivateSignupOffer && planTier === 'pro') {
+      const days = signupOffer?.trialDays ?? 7;
+      return isKoreanLocale ? `${days}일 Pro 체험 시작` : `Activate ${days}-day Pro trial`;
+    }
+
     if (isProTrial) {
       if (planTier === 'pro') return isKoreanLocale ? '지금 구독' : 'Subscribe now';
       if (planTier === 'premium') return isKoreanLocale ? 'Premium으로 업그레이드' : 'Upgrade to Premium';
@@ -325,7 +356,7 @@ export default function BillingPage() {
         showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
       }
     } else {
-      await subscribe(tier, { withTrial: !isProTrial });
+      await subscribe(tier, { withTrial: canActivateSignupOffer && tier === 'pro' ? true : !isProTrial });
     }
   };
 
@@ -391,7 +422,6 @@ export default function BillingPage() {
     setCheckoutPlan(tier);
 
     try {
-      const paddle = await ensurePaddle();
       const response = await apiClient.post('/billing/paddle/checkout', {
         tier,
         billingCycle: cycle,
@@ -400,10 +430,18 @@ export default function BillingPage() {
 
       const transactionId: string | undefined = response.data?.transactionId;
       const checkoutUrl: string | undefined = response.data?.checkoutUrl;
+      if (response.data?.activatedFromTrial || response.data?.checkoutType === 'trial_activation') {
+        setCheckoutPlan(null);
+        await dispatch(fetchBillingPageData()).unwrap();
+        showPopup('success', response.data?.message || 'Your paid plan is active.');
+        return;
+      }
+
       if (!transactionId && !checkoutUrl) {
         throw new Error('Billing API did not return a transaction ID.');
       }
 
+      const paddle = await ensurePaddle();
       // Always prefer transactionId for overlay — using the URL causes "bad request"
       const openPayload = transactionId
         ? { transactionId }
@@ -652,6 +690,14 @@ export default function BillingPage() {
 
       {checkoutError && (
         <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{checkoutError}</div>
+      )}
+
+      {!hasEffectivePlan && signupOffer?.eligible === true && signupOffer.priceConfigured === false && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {isKoreanLocale
+            ? '체험 결제 설정이 아직 완료되지 않았습니다. 지원팀에 문의해 주세요.'
+            : 'Trial checkout is not configured yet. Please contact support.'}
+        </div>
       )}
 
       {!paddleClientToken && (

@@ -45,6 +45,14 @@ export interface BillingSnapshot {
       effectiveAt?: string | null;
     } | null;
   } | null;
+  signupOffer?: {
+    eligible: boolean;
+    tier?: PlanTier;
+    source?: 'trial' | 'referral';
+    trialDays?: number;
+    requiresPaddleCheckout?: boolean;
+    priceConfigured?: boolean;
+  };
   plan: BillingPlan;
   credits?: number;
   alertsRemaining?: number;
