@@ -247,7 +247,7 @@ export const resumeAutoRenew = createAsyncThunk<
 
 export const upgradeSubscription = createAsyncThunk<
   { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
-  { tier: PlanTier; billingCycle?: BillingCycle },
+  { tier: PlanTier; billingCycle?: BillingCycle; effectiveFrom?: 'immediately' | 'next_billing_period' },
   { rejectValue: string }
 >('account/upgradeSubscription', async (payload, { dispatch, rejectWithValue }) => {
   try {

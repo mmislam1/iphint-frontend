@@ -221,6 +221,7 @@ export default function BillingPage() {
     currentSubscription.status !== 'active' &&
     (currentSubscription.status === 'trialing' || currentSubscription.isTrialing || currentSubscription.isTrial);
   const autoPayEnabled = snapshot?.subscription?.status === 'active' && snapshot.subscription.paddleManaged;
+  const hasPaddleManagedSubscription = !!snapshot?.subscription?.paddleManaged;
   const isPaddleActive = snapshot?.subscription?.status === 'active' && snapshot?.subscription?.paddleManaged;
   const pendingPlan = snapshot?.subscription?.pendingPlan ?? null;
   const hasPendingDowngrade = !!pendingPlan;
@@ -304,7 +305,7 @@ export default function BillingPage() {
   };
 
   const handlePlanAction = async (tier: PlanTier) => {
-    if (isPaddleActive) {
+    if (hasPaddleManagedSubscription) {
       setCheckoutError(null);
       try {
         const targetTier = hasPendingDowngrade && currentTier && tier === currentTier
@@ -314,12 +315,15 @@ export default function BillingPage() {
           ? currentSubscription?.billingCycle ?? cycle
           : cycle;
 
-        await dispatch(upgradeSubscription({ tier: targetTier, billingCycle: targetCycle })).unwrap();
-        const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
+        await dispatch(upgradeSubscription({
+          tier: targetTier,
+          billingCycle: targetCycle,
+          effectiveFrom: 'next_billing_period',
+        })).unwrap();
         if (hasPendingDowngrade && currentTier && tier === currentTier) {
           showPopup('success', isKoreanLocale ? '예약된 다운그레이드가 취소되었습니다.' : 'Scheduled downgrade has been canceled.');
         } else {
-          showPopup('success', `Your plan was updated to ${planName}.`);
+          showPopup('success', isKoreanLocale ? '다음 결제일에 요금제 변경이 예약되었습니다.' : 'Plan change scheduled for your next billing date.');
         }
       } catch (err) {
         showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
@@ -790,7 +794,7 @@ export default function BillingPage() {
             !currentSubscription.isTrialing;
           const isCurrentTrialPlan = isCurrent && plan.tier === 'pro' && isProTrial;
           const isWorking = savingPlan === plan.tier || checkoutPlan === plan.tier || upgradeLoading === plan.tier;
-          const isPaddleUnavailable = !paddleClientToken && !isPaddleActive;
+          const isPaddleUnavailable = !paddleClientToken && !hasPaddleManagedSubscription;
           const isPendingTargetPlan = !!pendingPlan && pendingPlan.tier === plan.tier;
           const isDisabled = isWorking || isPaddleUnavailable || (isCurrentPaidPlan && !hasPendingDowngrade) || (isPendingTargetPlan && hasPendingDowngrade);
           const planButtonClass = [
