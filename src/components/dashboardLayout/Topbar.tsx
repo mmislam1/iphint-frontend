@@ -222,7 +222,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 						</button>
 
 						{notificationOpen && (
-							<div className="absolute right-0 top-11 z-30 w-[22rem] max-w-[calc(100vw-1rem)] rounded-xl border border-gray-200 bg-white p-3 shadow-lg sm:w-96">
+							<div className="fixed inset-x-0 top-16 z-30 w-screen max-w-none rounded-none border-y border-gray-200 bg-white p-3 shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-96 sm:max-w-[calc(100vw-1rem)] sm:rounded-xl sm:border">
 								<div className="mb-2 flex items-center justify-between">
 									<p className="text-sm font-semibold text-gray-900">{t('notifications')}</p>
 									<button
