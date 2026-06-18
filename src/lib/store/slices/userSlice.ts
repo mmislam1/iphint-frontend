@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiClient, getApiErrorMessage } from '@/lib/api';
 import { DashboardState } from '../../../types/dashboard';
+import type { SignupQuestionnaireSubmission } from './signupQuestionnaireSlice';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ interface RegisterPayload {
   specificRole?: string;
   country?: string;
   phoneNumber?: string;
+  questionnaire?: SignupQuestionnaireSubmission | null;
 }
 
 interface UserProfilePatch {

@@ -10,6 +10,8 @@ import { AppDispatch, RootState } from '../../../lib/store/store';
 import { countries } from './countries';
 import { Link, useRouter } from '@/i18n/routing';
 import { selectIsAuthenticated, selectAuthLoading } from '../../../lib/store/slices/userSlice';
+import SignupQuestionnaireStep from '@/components/auth/SignupQuestionnaireStep';
+import { clearSignupQuestionnaire } from '@/lib/store/slices/signupQuestionnaireSlice';
 
 // We separate the form logic to safely use useSearchParams inside a Suspense boundary
 function SignupForm() {
@@ -22,6 +24,7 @@ function SignupForm() {
     '';
   const dispatch = useDispatch<AppDispatch>();
   const { authError } = useSelector((state: RootState) => state.user);
+  const questionnaire = useSelector((state: RootState) => state.signupQuestionnaire);
   const router = useRouter();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authLoading = useSelector(selectAuthLoading);
@@ -146,6 +149,14 @@ function SignupForm() {
     const fullPhone = `${formData.phoneCode}${formData.phoneNumber}`;
 
     // Referral is tracked from signup URL params and sent to backend from here.
+    const questionnairePayload = questionnaire.completedAt
+      ? {
+          ...questionnaire.answers,
+          skipped: questionnaire.skipped,
+          completedAt: questionnaire.completedAt,
+        }
+      : undefined;
+
     const submitData = {
       name: formData.name,
       companyName: formData.companyName,
@@ -155,13 +166,18 @@ function SignupForm() {
       email: formData.email,
       password: formData.password,
       referralCode,
+      ...(questionnairePayload ? { questionnaire: questionnairePayload } : {}),
     };
 
     const action = await dispatch(registerUser(submitData));
-    if (registerUser.fulfilled.match(action) && !action.payload.token) {
-      const noticeMessage = action.payload.message || '';
-      const target = `/signup/verification-request?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(noticeMessage)}`;
-      router.push(target);
+    if (registerUser.fulfilled.match(action)) {
+      dispatch(clearSignupQuestionnaire());
+
+      if (!action.payload.token) {
+        const noticeMessage = action.payload.message || '';
+        const target = `/signup/verification-request?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(noticeMessage)}`;
+        router.push(target);
+      }
     }
   };
 
@@ -171,7 +187,12 @@ function SignupForm() {
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10 text-black">{t('signupTitle')}</h1>
+      <div className="mb-8 flex items-center justify-between gap-4 sm:mb-10">
+        <h1 className="typo-t2 text-black">{t('signupTitle')}</h1>
+        <span className="typo-button-s rounded-full bg-black px-3 py-1 text-white">
+          {t('accountStepProgress')}
+        </span>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
@@ -393,7 +414,7 @@ function SignupForm() {
   );
 }
 
-export default function SignupPage() {
+function SignupAccountStep() {
   const locale = useLocale();
   const t = useTranslations('Auth');
   const illustrationSrc = locale === 'kr' ? '/signup_kr.svg' : '/signup2.svg';
@@ -414,5 +435,25 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SignupStepContent() {
+  const searchParams = useSearchParams();
+
+  if (searchParams.get('step') !== 'account') {
+    return <SignupQuestionnaireStep />;
+  }
+
+  return <SignupAccountStep />;
+}
+
+export default function SignupPage() {
+  const t = useTranslations('Auth');
+
+  return (
+    <Suspense fallback={<div className="fc min-h-dvh bg-white text-black">{t('loading')}</div>}>
+      <SignupStepContent />
+    </Suspense>
   );
 }

@@ -223,6 +223,67 @@
     "verificationSuccess": "Email verified successfully. You can now log in.",
     "verificationError": "Verification link is invalid or expired.",
     "loading": "Loading...",
+    "accountStepProgress": "2 / 2",
+    "questionnairePage": {
+      "title": "Sign up",
+      "progress": "1 / 2",
+      "intro": "Enter your information to try all premium features free for 7 days.",
+      "placeholder": "select",
+      "next": "Next",
+      "skip": "Skip",
+      "activeField": {
+        "label": "In which field are you active?",
+        "options": {
+          "photography": "Photography",
+          "illustrationDesign": "Illustration / design",
+          "ecommerce": "E-commerce",
+          "modelAgency": "Model / agency",
+          "brandMarketing": "Brand / marketing",
+          "other": "Other"
+        }
+      },
+      "imageUseLocation": {
+        "label": "Where do you mainly use your images?",
+        "options": {
+          "websitePortfolio": "Website / portfolio",
+          "socialMedia": "Social media",
+          "ecommercePlatforms": "E-commerce platforms",
+          "marketplaces": "Marketplaces",
+          "adsCampaigns": "Ads / campaigns",
+          "other": "Other"
+        }
+      },
+      "unauthorizedUseExperience": {
+        "label": "Have you ever found unauthorized use of your images?",
+        "options": {
+          "yesOften": "Yes, often",
+          "yesOnceOrTwice": "Yes, once or twice",
+          "notSure": "Not sure",
+          "no": "No"
+        }
+      },
+      "stolenWorkResponse": {
+        "label": "What would you do if your work was stolen?",
+        "options": {
+          "requestRemoval": "Request removal",
+          "reportPlatform": "Report it to the platform",
+          "askCompensation": "Ask for compensation",
+          "legalAction": "Take legal action",
+          "notSure": "Not sure yet"
+        }
+      },
+      "discoverySource": {
+        "label": "How did you hear about us?",
+        "options": {
+          "searchEngine": "Search engine",
+          "socialMedia": "Social media",
+          "recommendation": "Recommendation",
+          "communityEvent": "Community / event",
+          "ads": "Ads",
+          "other": "Other"
+        }
+      }
+    },
     "forgotPasswordPage": {
       "eyebrow": "Account access",
       "title": "Forgot password",

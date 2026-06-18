@@ -411,6 +411,67 @@
     "verificationSuccess": "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.",
     "verificationError": "인증 링크가 유효하지 않거나 만료되었습니다.",
     "loading": "불러오는 중...",
+    "accountStepProgress": "2 / 2",
+    "questionnairePage": {
+      "title": "회원가입",
+      "progress": "1 / 2",
+      "intro": "정보를 입력하면 모든 프리미엄 기능을 7일 동안 무료로 이용할 수 있습니다.",
+      "placeholder": "선택",
+      "next": "다음",
+      "skip": "건너뛰기",
+      "activeField": {
+        "label": "어떤 분야에서 활동하고 계신가요?",
+        "options": {
+          "photography": "사진",
+          "illustrationDesign": "일러스트 / 디자인",
+          "ecommerce": "이커머스",
+          "modelAgency": "모델 / 에이전시",
+          "brandMarketing": "브랜드 / 마케팅",
+          "other": "기타"
+        }
+      },
+      "imageUseLocation": {
+        "label": "이미지를 주로 어디에서 사용하시나요?",
+        "options": {
+          "websitePortfolio": "웹사이트 / 포트폴리오",
+          "socialMedia": "소셜 미디어",
+          "ecommercePlatforms": "이커머스 플랫폼",
+          "marketplaces": "마켓플레이스",
+          "adsCampaigns": "광고 / 캠페인",
+          "other": "기타"
+        }
+      },
+      "unauthorizedUseExperience": {
+        "label": "이미지가 무단 사용된 것을 발견한 적이 있나요?",
+        "options": {
+          "yesOften": "네, 자주 있습니다",
+          "yesOnceOrTwice": "네, 한두 번 있습니다",
+          "notSure": "잘 모르겠습니다",
+          "no": "아니요"
+        }
+      },
+      "stolenWorkResponse": {
+        "label": "작업물이 도용된다면 어떻게 하시겠어요?",
+        "options": {
+          "requestRemoval": "삭제를 요청합니다",
+          "reportPlatform": "플랫폼에 신고합니다",
+          "askCompensation": "보상을 요청합니다",
+          "legalAction": "법적 조치를 검토합니다",
+          "notSure": "아직 잘 모르겠습니다"
+        }
+      },
+      "discoverySource": {
+        "label": "어떻게 알게 되셨나요?",
+        "options": {
+          "searchEngine": "검색 엔진",
+          "socialMedia": "소셜 미디어",
+          "recommendation": "지인 추천",
+          "communityEvent": "커뮤니티 / 행사",
+          "ads": "광고",
+          "other": "기타"
+        }
+      }
+    },
     "forgotPasswordPage": {
       "eyebrow": "계정 접근",
       "title": "비밀번호 찾기",
