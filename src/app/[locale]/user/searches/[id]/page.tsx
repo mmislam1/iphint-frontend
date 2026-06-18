@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
 	ArrowLeft,
@@ -92,6 +92,8 @@ export default function SearchDetailsPage() {
 	const [deleteConfirmState, setDeleteConfirmState] = useState<DeleteConfirmState>(null);
 	const [viewedResultIds, setViewedResultIds] = useState<string[]>([]);
 	const [timeTick, setTimeTick] = useState(Date.now());
+	const [statusNoticeVisible, setStatusNoticeVisible] = useState(false);
+	const statusNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const { selectedSearch, results, planLimits, resultsLoading, updatingResultId, deletingResultId, bulkDeleting, error } = useSelector(
 		(state: RootState) => state.monitoring,
 	);
@@ -155,6 +157,7 @@ export default function SearchDetailsPage() {
 					reportInfringement: '침해 신고',
 					dispute: '이의 제기',
 					legalSupportRequest: '법률지원 신청',
+					adminInformed: '관리자에게 변경 사항이 전달되었습니다.',
 				}
 				: {
 					loadingSearchDetails: 'Loading search details...',
@@ -211,6 +214,7 @@ export default function SearchDetailsPage() {
 					reportInfringement: 'Report Infringement',
 					dispute: 'Dispute',
 					legalSupportRequest: 'Legal Support Request',
+					adminInformed: 'Admin has been informed about this change.',
 				},
 		[isKorean],
 	);
@@ -282,6 +286,9 @@ export default function SearchDetailsPage() {
 
 	useEffect(() => {
 		return () => {
+			if (statusNoticeTimerRef.current) {
+				clearTimeout(statusNoticeTimerRef.current);
+			}
 			dispatch(clearMonitoringState());
 		};
 	}, [dispatch]);
@@ -331,11 +338,28 @@ export default function SearchDetailsPage() {
 		return timeTick - foundAt.getTime() <= NEW_BADGE_WINDOW_MS;
 	};
 
-	const handleStatusChange = (resultId: string, reviewStatus: ReviewStatus) => {
-		dispatch(updateMonitoringResultStatus({ resultId, reviewStatus })).then(() => {
+	const showStatusNotice = () => {
+		setStatusNoticeVisible(true);
+
+		if (statusNoticeTimerRef.current) {
+			clearTimeout(statusNoticeTimerRef.current);
+		}
+
+		statusNoticeTimerRef.current = setTimeout(() => {
+			setStatusNoticeVisible(false);
+			statusNoticeTimerRef.current = null;
+		}, 3500);
+	};
+
+	const handleStatusChange = async (resultId: string, reviewStatus: ReviewStatus) => {
+		try {
+			await dispatch(updateMonitoringResultStatus({ resultId, reviewStatus })).unwrap();
+			showStatusNotice();
 			dispatch(fetchMonitoringSearchResults(id));
 			dispatch(fetchDashboardData());
-		});
+		} catch {
+			// The rejected thunk already surfaces the backend error through monitoring state.
+		}
 	};
 
 	const visibleResultIds = visibleResults.map((result) => result._id);
@@ -376,6 +400,9 @@ export default function SearchDetailsPage() {
 			await dispatch(fetchMonitoringSearchResults(id));
 			await dispatch(fetchDashboardData());
 			setSelectedResultIds([]);
+			showStatusNotice();
+		} catch {
+			// The rejected thunk already surfaces the backend error through monitoring state.
 		} finally {
 			setIsBulkUpdating(false);
 		}
@@ -470,6 +497,17 @@ export default function SearchDetailsPage() {
 
 	return (
 		<div className="space-y-6 md:space-y-8">
+			{statusNoticeVisible && (
+				<div
+					className="fixed right-4 top-4 z-50 flex max-w-sm items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-lg backdrop-blur-sm"
+					role="status"
+					aria-live="polite"
+				>
+					<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+					<p className="text-sm font-medium">{labels.adminInformed}</p>
+				</div>
+			)}
+
 			{/* ── Page Header ────────────────────────────────────────── */}
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
