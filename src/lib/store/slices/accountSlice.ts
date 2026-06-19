@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { apiClient, getApiErrorMessage } from '@/lib/api';
 import { detectCountryCodeByIp } from '../../currency';
 
@@ -20,7 +21,47 @@ export interface BillingPlan {
   pricing: { monthly: number; annual: number };
 }
 
+export interface BillingResourceLimits {
+  imageUploadLimit?: number | null;
+  alertLimit?: number | null;
+  pdfEnabled?: boolean | null;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export interface BillingBrief {
+  currentPlan?: {
+    tier?: PlanTier | string;
+    name?: string;
+    billingCycle?: BillingCycle;
+    price?: number | string | null;
+    priceFormatted?: string | null;
+    resourceLimits?: BillingResourceLimits | null;
+    limits?: BillingResourceLimits | null;
+  } | null;
+  trial?: {
+    isTrial?: boolean;
+    endsAt?: string | null;
+    daysLeft?: number | null;
+    trialDaysLeft?: number | null;
+  } | null;
+  renewal?: {
+    autoRenew?: boolean;
+    endsAt?: string | null;
+    renewsAt?: string | null;
+  } | null;
+  scheduledPlan?: {
+    tier?: PlanTier | string;
+    name?: string;
+    billingCycle?: BillingCycle;
+    chargeAt?: string | null;
+    activatesAt?: string | null;
+    price?: number | string | null;
+    priceFormatted?: string | null;
+  } | null;
+}
+
 export interface BillingSnapshot {
+  brief?: BillingBrief | null;
   subscription: {
     id?: string;
     status: 'active' | 'trialing' | 'past_due' | 'paused' | 'cancelled' | 'expired' | 'pending';
@@ -55,6 +96,13 @@ export interface BillingSnapshot {
     pdfEnabled: boolean;
   };
 }
+
+type BillingPageData = {
+  plans: BillingPlan[];
+  snapshot: BillingSnapshot | null;
+  countryCode: string;
+  code?: string;
+};
 
 export interface ReferralStatus {
   referralCode: string;
@@ -136,6 +184,23 @@ const getUnreadCandidate = (
   notificationId: string,
 ) => items.find((item) => item._id === notificationId && !item.isRead);
 
+const extractApiCode = (value: unknown): string | null => {
+  if (!value || typeof value !== 'object' || !('code' in value)) {
+    return null;
+  }
+
+  const code = (value as { code?: unknown }).code;
+  return typeof code === 'string' && code.trim() ? code.trim() : null;
+};
+
+const getApiErrorCode = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    return extractApiCode(error.response?.data);
+  }
+
+  return extractApiCode(error);
+};
+
 export const fetchSubscriptionSnapshot = createAsyncThunk<BillingSnapshot, void, { rejectValue: string }>(
   'account/fetchSubscriptionSnapshot',
   async (_, { rejectWithValue }) => {
@@ -149,7 +214,7 @@ export const fetchSubscriptionSnapshot = createAsyncThunk<BillingSnapshot, void,
 );
 
 export const fetchBillingPageData = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   void,
   { rejectValue: string }
 >('account/fetchBillingPageData', async (_, { rejectWithValue }) => {
@@ -181,7 +246,7 @@ export const fetchBillingPageData = createAsyncThunk<
 });
 
 export const subscribeToPlan = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   { tier: PlanTier; billingCycle: BillingCycle },
   { rejectValue: string }
 >('account/subscribeToPlan', async (payload, { dispatch, rejectWithValue }) => {
@@ -194,7 +259,7 @@ export const subscribeToPlan = createAsyncThunk<
 });
 
 export const cancelPlanSubscription = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   void,
   { rejectValue: string }
 >('account/cancelPlanSubscription', async (_, { dispatch, rejectWithValue }) => {
@@ -207,7 +272,7 @@ export const cancelPlanSubscription = createAsyncThunk<
 });
 
 export const pauseSubscription = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   void,
   { rejectValue: string }
 >('account/pauseSubscription', async (_, { dispatch, rejectWithValue }) => {
@@ -220,7 +285,7 @@ export const pauseSubscription = createAsyncThunk<
 });
 
 export const resumeSubscription = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   void,
   { rejectValue: string }
 >('account/resumeSubscription', async (_, { dispatch, rejectWithValue }) => {
@@ -233,7 +298,7 @@ export const resumeSubscription = createAsyncThunk<
 });
 
 export const resumeAutoRenew = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   void,
   { rejectValue: string }
 >('account/resumeAutoRenew', async (_, { dispatch, rejectWithValue }) => {
@@ -245,15 +310,52 @@ export const resumeAutoRenew = createAsyncThunk<
   }
 });
 
+export const setAutoRenew = createAsyncThunk<
+  BillingPageData,
+  { enabled: boolean },
+  { rejectValue: string }
+>('account/setAutoRenew', async ({ enabled }, { dispatch, rejectWithValue }) => {
+  try {
+    try {
+      await apiClient.post('/billing/auto-renew', { enabled });
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      const shouldUseLegacyFallback = status === 404 || status === 405;
+
+      if (!shouldUseLegacyFallback) {
+        throw error;
+      }
+
+      await apiClient.post(enabled ? '/billing/resume-auto-renew' : '/billing/cancel');
+    }
+
+    return await dispatch(fetchBillingPageData()).unwrap();
+  } catch (error) {
+    return rejectWithValue(
+      getApiErrorMessage(error, enabled ? 'Failed to turn renewal on.' : 'Failed to turn renewal off.'),
+    );
+  }
+});
+
 export const upgradeSubscription = createAsyncThunk<
-  { plans: BillingPlan[]; snapshot: BillingSnapshot | null; countryCode: string },
+  BillingPageData,
   { tier: PlanTier; billingCycle?: BillingCycle; effectiveFrom?: 'immediately' | 'next_billing_period' },
   { rejectValue: string }
 >('account/upgradeSubscription', async (payload, { dispatch, rejectWithValue }) => {
   try {
-    await apiClient.patch('/billing/subscription', payload);
-    return await dispatch(fetchBillingPageData()).unwrap();
+    const response = await apiClient.patch('/billing/subscription', payload);
+    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
+    const code = extractApiCode(response.data);
+
+    return code ? { ...refreshed, code } : refreshed;
   } catch (error) {
+    const code = getApiErrorCode(error);
+
+    if (code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED') {
+      const refreshed = await dispatch(fetchBillingPageData()).unwrap();
+      return { ...refreshed, code };
+    }
+
     return rejectWithValue(getApiErrorMessage(error, 'Failed to change subscription.'));
   }
 });
@@ -456,6 +558,7 @@ interface AccountState {
     loading: boolean;
     error: string | null;
     savingPlan: PlanTier | null;
+    autoRenewLoading: boolean;
     cancelLoading: boolean;
     pauseLoading: boolean;
     resumeLoading: boolean;
@@ -511,6 +614,7 @@ const initialState: AccountState = {
     loading: false,
     error: null,
     savingPlan: null,
+    autoRenewLoading: false,
     cancelLoading: false,
     pauseLoading: false,
     resumeLoading: false,
@@ -657,6 +761,20 @@ const accountSlice = createSlice({
       .addCase(resumeAutoRenew.rejected, (state, action) => {
         state.billing.resumeAutoRenewLoading = false;
         state.billing.error = action.payload ?? 'Failed to resume auto-renew.';
+      })
+      .addCase(setAutoRenew.pending, (state) => {
+        state.billing.autoRenewLoading = true;
+        state.billing.error = null;
+      })
+      .addCase(setAutoRenew.fulfilled, (state, action) => {
+        state.billing.autoRenewLoading = false;
+        state.billing.plans = action.payload.plans;
+        state.billing.countryCode = action.payload.countryCode;
+        state.subscription.data = action.payload.snapshot;
+      })
+      .addCase(setAutoRenew.rejected, (state, action) => {
+        state.billing.autoRenewLoading = false;
+        state.billing.error = action.payload ?? 'Failed to update auto-renew.';
       })
       .addCase(upgradeSubscription.pending, (state, action) => {
         state.billing.upgradeLoading = action.meta.arg.tier;

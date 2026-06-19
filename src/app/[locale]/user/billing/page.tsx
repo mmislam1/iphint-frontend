@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import type { CheckoutOpenOptions, Paddle, PaddleEventData } from '@paddle/paddle-js';
+import axios from 'axios';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, Crown } from 'lucide-react';
@@ -8,63 +9,14 @@ import { apiClient, getApiErrorMessage } from '@/lib/api';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
-  cancelPlanSubscription,
   fetchBillingPageData,
-  pauseSubscription,
-  resumeAutoRenew,
-  resumeSubscription,
+  setAutoRenew,
   upgradeSubscription,
+  type BillingCycle,
+  type BillingPlan as Plan,
+  type BillingSnapshot,
+  type PlanTier,
 } from '@/lib/store/slices/accountSlice';
-
-type PlanTier = 'starter' | 'pro' | 'premium';
-type BillingCycle = 'monthly' | 'annual';
-
-interface Plan {
-  tier: PlanTier;
-  name: string;
-  imageUploadLimit: number;
-  alertLimit: number;
-  pdfEnabled: boolean;
-  weeklyEmailAlerts: boolean;
-  features: string[];
-  pricing: { monthly: number; annual: number };
-}
-
-interface BillingSnapshot {
-  subscription: {
-    id?: string;
-    status: 'active' | 'trialing' | 'past_due' | 'paused' | 'cancelled' | 'expired' | 'pending';
-    hasAccess?: boolean;
-    billingCycle: BillingCycle;
-    grantSource?: 'paid' | 'trial' | 'referral';
-    isTrial?: boolean;
-    isTrialing?: boolean;
-    isPastDue?: boolean;
-    paddleManaged?: boolean;
-    trialEndsAt?: string | null;
-    trialDaysLeft?: number;
-    activationDate?: string;
-    currentPeriodEnd?: string;
-    nextBillingDate?: string;
-    cancelDate?: string;
-    paddleStatus?: string;
-    pendingPlan?: {
-      tier: PlanTier;
-      name: string;
-      billingCycle: BillingCycle;
-      effectiveAt?: string | null;
-    } | null;
-  } | null;
-  plan: Plan;
-  credits?: number;
-  alertsRemaining?: number;
-  usage: {
-    imagesUsedThisMonth: number;
-    imageUploadLimit: number;
-    alertLimit: number;
-    pdfEnabled: boolean;
-  };
-}
 
 interface BillingHistoryItem {
   _id: string;
@@ -75,39 +27,91 @@ interface BillingHistoryItem {
   createdAt: string;
 }
 
+interface CheckoutResponse {
+  code?: string;
+  message?: string;
+  transactionId?: string;
+  checkoutUrl?: string;
+  url?: string;
+}
+
+interface PendingTrialCheckout {
+  tier: PlanTier;
+  billingCycle: BillingCycle;
+  withTrial: boolean;
+  checkout: CheckoutResponse | null;
+}
+
+interface NormalizedScheduledPlan {
+  tier: PlanTier | null;
+  name: string;
+  billingCycle: BillingCycle;
+  chargeAt: string | null;
+  activatesAt: string | null;
+}
+
+const planTiers: PlanTier[] = ['starter', 'pro', 'premium'];
 const paddleEnvironment =
   (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT ?? process.env.NEXT_PUBLIC_PADDLE_ENV) === 'sandbox'
     ? 'sandbox'
     : 'production';
 const paddleClientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.trim().replace(/^['"']|['"']$/g, '') || undefined;
 
+const isPlanTier = (value: unknown): value is PlanTier =>
+  typeof value === 'string' && planTiers.includes(value as PlanTier);
+
+const readResponseCode = (value: unknown): string | null => {
+  if (!value || typeof value !== 'object' || !('code' in value)) {
+    return null;
+  }
+
+  const code = (value as { code?: unknown }).code;
+  return typeof code === 'string' && code.trim() ? code.trim() : null;
+};
+
+const getAxiosResponseData = (error: unknown): unknown =>
+  axios.isAxiosError(error) ? error.response?.data : null;
+
+const getBillingErrorCode = (error: unknown) => readResponseCode(getAxiosResponseData(error));
+
 const getPaymentErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === 'string') {
     const trimmed = error.trim();
-    if (trimmed) {
-      return trimmed;
-    }
+    if (trimmed) return trimmed;
   }
 
   if (error instanceof Error) {
     const trimmed = error.message.trim();
-    if (trimmed) {
-      return trimmed;
-    }
+    if (trimmed) return trimmed;
   }
 
   return getApiErrorMessage(error, fallback);
 };
 
+const getPaddleEventTransactionId = (event: PaddleEventData) => {
+  const data = (event as { data?: Record<string, unknown> }).data;
+  const transaction =
+    data?.transactionId ??
+    data?.transaction_id ??
+    (typeof data?.transaction === 'object' && data.transaction !== null
+      ? (data.transaction as { id?: unknown }).id
+      : null);
+
+  return typeof transaction === 'string' && transaction.trim() ? transaction.trim() : null;
+};
+
 export default function BillingPage() {
   const dispatch = useAppDispatch();
-  const { plans, loading, error, savingPlan, cancelLoading, pauseLoading, resumeLoading, resumeAutoRenewLoading, upgradeLoading, countryCode } = useAppSelector((state) => state.account.billing);
+  const { plans, loading, error, savingPlan, autoRenewLoading, upgradeLoading, countryCode } = useAppSelector(
+    (state) => state.account.billing,
+  );
   const snapshot = useAppSelector((state) => state.account.subscription.data) as BillingSnapshot | null;
   const t = useTranslations('UserPanel.billing');
   const locale = useLocale();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanTier | null>(null);
+  const [trialWarning, setTrialWarning] = useState<PendingTrialCheckout | null>(null);
   const [popupMessage, setPopupMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<BillingHistoryItem[]>([]);
@@ -118,12 +122,41 @@ export default function BillingPage() {
   const paddlePromiseRef = useRef<Promise<Paddle> | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeCheckoutTransactionIdRef = useRef<string | null>(null);
 
   const isKoreanLocale = locale === 'kr';
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(isKoreanLocale ? 'ko-KR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    [isKoreanLocale],
+  );
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat(isKoreanLocale ? 'ko-KR' : 'en-US'),
+    [isKoreanLocale],
+  );
 
-  const formatPrice = (usd: number) => {
-    return formatPriceByCountry(usd, countryCode);
-  };
+  const formatPrice = useCallback(
+    (usd: number) => formatPriceByCountry(usd, countryCode),
+    [countryCode],
+  );
+
+  const formatDate = useCallback(
+    (value?: string | null) => {
+      if (!value) return '--';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date);
+    },
+    [dateFormatter],
+  );
+
+  const getCycleLabel = useCallback(
+    (value?: BillingCycle | null) => (value === 'annual' ? t('annual') : t('monthly')),
+    [t],
+  );
 
   const showPopup = useCallback((type: 'success' | 'error' | 'info', text: string) => {
     setPopupMessage({ type, text });
@@ -140,13 +173,15 @@ export default function BillingPage() {
 
   useEffect(() => {
     dispatch(fetchBillingPageData());
-  }, [dispatch, t]);
+  }, [dispatch]);
 
   useEffect(() => {
     let active = true;
+
     const loadHistory = async () => {
       setHistoryLoading(true);
       setHistoryError(null);
+
       try {
         const response = await apiClient.get('/billing/history', { params: { page: 1, limit: 20 } });
         if (!active) return;
@@ -160,83 +195,123 @@ export default function BillingPage() {
     };
 
     void loadHistory();
+
     return () => {
       active = false;
     };
   }, []);
 
-  const handlePaddleEvent = useCallback((event: PaddleEventData) => {
-    if (event.name === 'checkout.completed') {
-      setCheckoutPlan(null);
-      setCheckoutError(null);
-
-      // Immediately sync from Paddle API in case webhook delivery is delayed.
-      // This force-writes the paid subscription state to the DB so the UI
-      // doesn't remain stuck on the trial badge.
-      void (async () => {
-        try {
-          await apiClient.post('/billing/sync', {});
-        } catch {
-          // Non-fatal — polling below will still refresh via the standard endpoint.
-        }
-        // Poll until subscription is active and Paddle-managed
-        let attempts = 0;
-        const poll = () => {
-          if (attempts >= 12) return;
-          attempts++;
-          pollTimerRef.current = setTimeout(async () => {
-            const result = await dispatch(fetchBillingPageData());
-            const sub = (result as { payload?: { snapshot?: BillingSnapshot | null } }).payload?.snapshot?.subscription;
-            if (sub?.status === 'active' && sub?.paddleManaged) return;
-            poll();
-          }, 2500);
-        };
-        poll();
-        startTransition(() => { void dispatch(fetchBillingPageData()); });
-      })();
-      return;
-    }
-
-    if (event.name === 'checkout.error' || event.name === 'checkout.failed') {
-      setCheckoutPlan(null);      setCheckoutError(t('checkoutError'));
-      return;
-    }
-
-    if (event.name === 'checkout.closed') {
-      setCheckoutPlan(null);
-    }
-  }, [dispatch, t]);
-
+  const brief = snapshot?.brief ?? null;
   const currentSubscription = snapshot?.subscription ?? null;
-  const hasEffectivePlan =
+  const briefCurrentPlan = brief?.currentPlan ?? null;
+  const hasBriefPlan = Boolean(briefCurrentPlan?.name || briefCurrentPlan?.tier);
+  const hasLegacyEffectivePlan =
     !!currentSubscription &&
     (currentSubscription.hasAccess === true || ['active', 'trialing', 'past_due'].includes(currentSubscription.status));
-  const currentTier: PlanTier | null = hasEffectivePlan ? (snapshot?.plan?.tier ?? null) : null;
-  const currentPlanName = hasEffectivePlan ? (snapshot?.plan?.name ?? '--') : '--';
-  // Paid active status MUST take priority over trial flags.
-  // If status is 'active' the user has converted to a paid plan — never show trial badge.
-  const isProTrial =
-    currentTier === 'pro' &&
-    !!currentSubscription &&
-    currentSubscription.status !== 'active' &&
-    (currentSubscription.status === 'trialing' || currentSubscription.isTrialing || currentSubscription.isTrial);
-  const autoPayEnabled = snapshot?.subscription?.status === 'active' && snapshot.subscription.paddleManaged;
-  const hasPaddleManagedSubscription = !!snapshot?.subscription?.paddleManaged;
-  const isPaddleActive = snapshot?.subscription?.status === 'active' && snapshot?.subscription?.paddleManaged;
-  const pendingPlan = snapshot?.subscription?.pendingPlan ?? null;
-  const hasPendingDowngrade = !!pendingPlan;
-  const cancelEffectiveDate = snapshot?.subscription?.cancelDate
-    ? new Date(snapshot.subscription.cancelDate)
-    : null;
-  const isCancelScheduled =
-    snapshot?.subscription?.status === 'active' &&
-    !!snapshot?.subscription?.paddleManaged &&
-    !!cancelEffectiveDate &&
-    !Number.isNaN(cancelEffectiveDate.getTime()) &&
-    cancelEffectiveDate.getTime() > Date.now();
-  const scheduledCancelDaysLeft = isCancelScheduled && cancelEffectiveDate
-    ? Math.max(0, Math.ceil((cancelEffectiveDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
-    : null;
+  const hasEffectivePlan = hasBriefPlan || hasLegacyEffectivePlan;
+  const currentTier = isPlanTier(briefCurrentPlan?.tier)
+    ? briefCurrentPlan.tier
+    : hasEffectivePlan
+      ? snapshot?.plan?.tier ?? null
+      : null;
+  const currentPlanFromCatalog = currentTier ? plans.find((plan) => plan.tier === currentTier) ?? snapshot?.plan : snapshot?.plan;
+  const currentPlanName = briefCurrentPlan?.name || (hasEffectivePlan ? currentPlanFromCatalog?.name ?? '--' : '--');
+  const currentBillingCycle = briefCurrentPlan?.billingCycle ?? currentSubscription?.billingCycle ?? cycle;
+  const isTrial = Boolean(
+    brief?.trial?.isTrial ??
+      (!!currentSubscription &&
+        currentSubscription.status !== 'active' &&
+        (currentSubscription.status === 'trialing' || currentSubscription.isTrialing || currentSubscription.isTrial)),
+  );
+  const trialDaysLeft = brief?.trial?.daysLeft ?? brief?.trial?.trialDaysLeft ?? currentSubscription?.trialDaysLeft ?? null;
+  const trialEndsAt = brief?.trial?.endsAt ?? currentSubscription?.trialEndsAt ?? null;
+  const isPaidSubscription = Boolean(
+    currentSubscription?.paddleManaged ||
+      currentSubscription?.grantSource === 'paid' ||
+      (hasEffectivePlan && !isTrial && brief?.renewal),
+  );
+  const legacyCancelDate = currentSubscription?.cancelDate ?? null;
+  const legacyCancelTime = legacyCancelDate ? new Date(legacyCancelDate).getTime() : Number.NaN;
+  const hasLegacyAutoRenewOff =
+    currentSubscription?.status === 'active' &&
+    !!currentSubscription?.paddleManaged &&
+    Number.isFinite(legacyCancelTime) &&
+    legacyCancelTime > Date.now();
+  const autoRenewEnabled =
+    typeof brief?.renewal?.autoRenew === 'boolean'
+      ? brief.renewal.autoRenew
+      : Boolean(currentSubscription?.status === 'active' && currentSubscription?.paddleManaged && !hasLegacyAutoRenewOff);
+  const renewalEndsAt = brief?.renewal?.endsAt ?? legacyCancelDate ?? currentSubscription?.currentPeriodEnd ?? null;
+  const renewalRenewsAt = brief?.renewal?.renewsAt ?? currentSubscription?.nextBillingDate ?? null;
+  const isAutoRenewOff = isPaidSubscription && !autoRenewEnabled;
+  const hasExistingPaddleSubscription = isPaidSubscription && !isTrial;
+  const canToggleAutoRenew = isPaidSubscription && hasEffectivePlan;
+
+  const scheduledPlan = useMemo<NormalizedScheduledPlan | null>(() => {
+    const scheduled = brief?.scheduledPlan;
+    if (scheduled) {
+      return {
+        tier: isPlanTier(scheduled.tier) ? scheduled.tier : null,
+        name: scheduled.name || String(scheduled.tier ?? ''),
+        billingCycle: scheduled.billingCycle ?? currentBillingCycle,
+        chargeAt: scheduled.chargeAt ?? null,
+        activatesAt: scheduled.activatesAt ?? null,
+      };
+    }
+
+    const pendingPlan = currentSubscription?.pendingPlan;
+    if (!pendingPlan) return null;
+
+    return {
+      tier: pendingPlan.tier,
+      name: pendingPlan.name,
+      billingCycle: pendingPlan.billingCycle,
+      chargeAt: null,
+      activatesAt: pendingPlan.effectiveAt ?? null,
+    };
+  }, [brief?.scheduledPlan, currentBillingCycle, currentSubscription?.pendingPlan]);
+  const visibleScheduledPlan = isAutoRenewOff ? null : scheduledPlan;
+  const hasScheduledPlan = !!visibleScheduledPlan;
+
+  const currentResourceLimits = useMemo(() => {
+    const limits = briefCurrentPlan?.resourceLimits ?? briefCurrentPlan?.limits ?? null;
+    const imageUploadLimit = Number(
+      limits?.imageUploadLimit ?? currentPlanFromCatalog?.imageUploadLimit ?? snapshot?.usage?.imageUploadLimit ?? 0,
+    );
+    const alertLimit = Number(limits?.alertLimit ?? currentPlanFromCatalog?.alertLimit ?? snapshot?.usage?.alertLimit ?? 0);
+    const pdfEnabled = Boolean(limits?.pdfEnabled ?? currentPlanFromCatalog?.pdfEnabled ?? snapshot?.usage?.pdfEnabled ?? false);
+
+    return {
+      imageUploadLimit: Number.isFinite(imageUploadLimit) ? imageUploadLimit : 0,
+      alertLimit: Number.isFinite(alertLimit) ? alertLimit : 0,
+      pdfEnabled,
+    };
+  }, [briefCurrentPlan?.limits, briefCurrentPlan?.resourceLimits, currentPlanFromCatalog, snapshot?.usage]);
+
+  const currentPlanPrice = useMemo(() => {
+    if (briefCurrentPlan?.priceFormatted) return briefCurrentPlan.priceFormatted;
+    if (typeof briefCurrentPlan?.price === 'string' && briefCurrentPlan.price.trim()) return briefCurrentPlan.price;
+    if (typeof briefCurrentPlan?.price === 'number') return formatPrice(briefCurrentPlan.price);
+
+    const fallbackPrice = currentPlanFromCatalog?.pricing?.[currentBillingCycle];
+    return typeof fallbackPrice === 'number' ? formatPrice(fallbackPrice) : '--';
+  }, [briefCurrentPlan?.price, briefCurrentPlan?.priceFormatted, currentBillingCycle, currentPlanFromCatalog?.pricing, formatPrice]);
+
+  const searchUsage = useMemo(() => {
+    if (!snapshot) {
+      return { used: 0, limit: 0, remaining: 0, unlimited: false };
+    }
+
+    const used = Number(snapshot.usage.imagesUsedThisMonth || 0);
+    const limit = Number(snapshot.usage.imageUploadLimit || 0);
+    if (limit <= 0) {
+      return { used, limit, remaining: -1, unlimited: true };
+    }
+
+    const safeUsed = Math.max(0, used);
+    const remaining = Math.max(0, limit - safeUsed);
+    return { used: safeUsed, limit, remaining, unlimited: false };
+  }, [snapshot]);
 
   const tierOrder: PlanTier[] = ['starter', 'pro', 'premium'];
   const currentTierIndex = currentTier ? tierOrder.indexOf(currentTier) : -1;
@@ -275,13 +350,23 @@ export default function BillingPage() {
     return koreanPlanFeatures[plan.tier] ?? plan.features;
   };
 
-  const getPlanName = (planTier: PlanTier) => plans.find((p) => p.tier === planTier)?.name || planTier;
+  const getPlanName = (planTier: PlanTier) => plans.find((plan) => plan.tier === planTier)?.name || planTier;
 
-  const getPlanCtaLabel = (planTier: PlanTier, isWorking: boolean) => {
+  const formatLimitCount = (value: number | null | undefined) => {
+    if (value == null) return '--';
+    return value <= 0 ? t('unlimited') : numberFormatter.format(value);
+  };
+
+  const getPlanCtaLabel = (planTier: PlanTier, isWorking: boolean, isPendingTargetPlan: boolean) => {
     if (isWorking) return isKoreanLocale ? '처리 중...' : 'Processing...';
+    if (isPendingTargetPlan) return t('scheduledPlanButton');
 
-    if (isProTrial) {
-      if (planTier === 'pro') return isKoreanLocale ? '지금 구독' : 'Subscribe now';
+    if (hasScheduledPlan && currentTier && planTier === currentTier) {
+      return t('keepCurrentPlan');
+    }
+
+    if (isTrial) {
+      if (planTier === currentTier) return isKoreanLocale ? '지금 구독' : 'Subscribe now';
       if (planTier === 'premium') return isKoreanLocale ? 'Premium으로 업그레이드' : 'Upgrade to Premium';
     }
 
@@ -290,80 +375,107 @@ export default function BillingPage() {
       return isKoreanLocale ? `${getPlanName(planTier)} 구매` : `Buy ${getPlanName(planTier)}`;
     }
 
-    if (isPaddleActive) {
+    if (hasExistingPaddleSubscription) {
+      if (planTier === currentTier && cycle !== currentBillingCycle) return t('changeBillingCycle');
       if (planIndex > currentTierIndex) return isKoreanLocale ? `${getPlanName(planTier)}로 업그레이드` : `Upgrade to ${getPlanName(planTier)}`;
-      if (planIndex < currentTierIndex) {
-        return isKoreanLocale ? `${getPlanName(planTier)}로 다운그레이드` : `Downgrade to ${getPlanName(planTier)}`;
-      }
-    }
-
-    if (hasPendingDowngrade && currentTier && planTier === currentTier) {
-      return isKoreanLocale ? '현재 요금제 유지' : 'Keep current plan';
+      if (planIndex < currentTierIndex) return isKoreanLocale ? `${getPlanName(planTier)}로 다운그레이드` : `Downgrade to ${getPlanName(planTier)}`;
     }
 
     return isKoreanLocale ? `${getPlanName(planTier)} 구독` : `Subscribe to ${getPlanName(planTier)}`;
   };
 
-  const handlePlanAction = async (tier: PlanTier) => {
-    if (hasPaddleManagedSubscription) {
-      setCheckoutError(null);
-      try {
-        const targetTier = hasPendingDowngrade && currentTier && tier === currentTier
-          ? currentTier
-          : tier;
-        const targetCycle = hasPendingDowngrade && currentTier && tier === currentTier
-          ? currentSubscription?.billingCycle ?? cycle
-          : cycle;
+  const schedulePlanChange = async (
+    tier: PlanTier,
+    billingCycle: BillingCycle,
+    options?: { cancelScheduledChange?: boolean; fromCheckoutConflict?: boolean },
+  ) => {
+    setCheckoutError(null);
 
-        await dispatch(upgradeSubscription({
-          tier: targetTier,
-          billingCycle: targetCycle,
+    try {
+      const result = await dispatch(
+        upgradeSubscription({
+          tier,
+          billingCycle,
           effectiveFrom: 'next_billing_period',
-        })).unwrap();
-        if (hasPendingDowngrade && currentTier && tier === currentTier) {
-          showPopup('success', isKoreanLocale ? '예약된 다운그레이드가 취소되었습니다.' : 'Scheduled downgrade has been canceled.');
-        } else {
-          showPopup('success', isKoreanLocale ? '다음 결제일에 요금제 변경이 예약되었습니다.' : 'Plan change scheduled for your next billing date.');
-        }
-      } catch (err) {
-        showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
+        }),
+      ).unwrap();
+
+      if (result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED') {
+        showPopup('info', t('autoRenewScheduleCancelled'));
+      } else if (options?.cancelScheduledChange) {
+        showPopup('success', t('scheduledPlanCancelled'));
+      } else if (options?.fromCheckoutConflict) {
+        showPopup('info', t('activeSubscriptionChangeStarted'));
+      } else {
+        showPopup('success', t('planChangeScheduled'));
       }
-    } else {
-      await subscribe(tier, { withTrial: !isProTrial });
+    } catch (err) {
+      showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
+    } finally {
+      setCheckoutPlan(null);
     }
   };
 
-  const usageLabel = useMemo(() => {
-    if (!snapshot) return '';
-    const used = snapshot.usage.imagesUsedThisMonth;
-    const limit = snapshot.usage.imageUploadLimit;
-    if (!limit) return `${used} uploads this month (unlimited plan)`;
-    return `${used}/${limit} uploads used this month`;
-  }, [snapshot]);
+  const handlePaddleEvent = useCallback(
+    (event: PaddleEventData) => {
+      if (event.name === 'checkout.completed') {
+        const transactionId = getPaddleEventTransactionId(event) ?? activeCheckoutTransactionIdRef.current;
+        activeCheckoutTransactionIdRef.current = null;
+        setCheckoutPlan(null);
+        setCheckoutError(null);
 
-  const searchUsage = useMemo(() => {
-    if (!snapshot) {
-      return { used: 0, limit: 0, remaining: 0, unlimited: false };
-    }
+        void (async () => {
+          try {
+            await apiClient.post('/billing/sync', transactionId ? { transactionId } : {});
+          } catch {
+            // Webhooks and polling below still provide eventual consistency.
+          }
 
-    const used = Number(snapshot.usage.imagesUsedThisMonth || 0);
-    const limit = Number(snapshot.usage.imageUploadLimit || 0);
-    if (limit <= 0) {
-      return { used, limit, remaining: -1, unlimited: true };
-    }
+          let attempts = 0;
+          const poll = () => {
+            if (attempts >= 12) return;
+            attempts += 1;
+            pollTimerRef.current = setTimeout(async () => {
+              try {
+                const result = await dispatch(fetchBillingPageData()).unwrap();
+                const subscription = result.snapshot?.subscription;
+                const renewal = result.snapshot?.brief?.renewal;
+                if (subscription?.status === 'active' && (subscription.paddleManaged || renewal?.autoRenew)) return;
+              } catch {
+                // Try again until attempts are exhausted.
+              }
+              poll();
+            }, 2500);
+          };
 
-    const safeUsed = Math.max(0, used);
-    const remaining = Math.max(0, limit - safeUsed);
-    return { used: safeUsed, limit, remaining, unlimited: false };
-  }, [snapshot]);
+          poll();
+          startTransition(() => {
+            void dispatch(fetchBillingPageData());
+          });
+        })();
+        return;
+      }
+
+      if (event.name === 'checkout.error' || event.name === 'checkout.failed') {
+        activeCheckoutTransactionIdRef.current = null;
+        setCheckoutPlan(null);
+        setCheckoutError(t('checkoutError'));
+        return;
+      }
+
+      if (event.name === 'checkout.closed') {
+        activeCheckoutTransactionIdRef.current = null;
+        setCheckoutPlan(null);
+      }
+    },
+    [dispatch, t],
+  );
 
   const ensurePaddle = async () => {
-    if (paddleRef.current) {
-      return paddleRef.current;
-    }
+    if (paddleRef.current) return paddleRef.current;
 
     if (!paddleClientToken) {
-      throw new Error('Paddle checkout is not configured. Add NEXT_PUBLIC_PADDLE_CLIENT_TOKEN to enable paid subscriptions.');
+      throw new Error('Paddle checkout overlay is not configured. Add NEXT_PUBLIC_PADDLE_CLIENT_TOKEN or return a checkoutUrl.');
     }
 
     if (!paddlePromiseRef.current) {
@@ -390,90 +502,160 @@ export default function BillingPage() {
     return paddlePromiseRef.current;
   };
 
-  const subscribe = async (tier: PlanTier, options?: { withTrial?: boolean }) => {
-    setCheckoutError(null);
-    setCheckoutPlan(tier);
+  const launchCheckout = async (checkout: CheckoutResponse, tier: PlanTier) => {
+    const transactionId = checkout.transactionId;
+    const checkoutUrl = checkout.checkoutUrl ?? checkout.url;
 
-    try {
+    if (transactionId) {
       const paddle = await ensurePaddle();
-      const response = await apiClient.post('/billing/paddle/checkout', {
-        tier,
-        billingCycle: cycle,
-        withTrial: options?.withTrial,
-      });
-
-      const transactionId: string | undefined = response.data?.transactionId;
-      const checkoutUrl: string | undefined = response.data?.checkoutUrl;
-      if (!transactionId && !checkoutUrl) {
-        throw new Error('Billing API did not return a transaction ID.');
-      }
-
-      // Always prefer transactionId for overlay — using the URL causes "bad request"
-      const openPayload = transactionId
-        ? { transactionId }
-        : { url: checkoutUrl! };
-
+      activeCheckoutTransactionIdRef.current = transactionId;
       paddle.Checkout.open({
-        ...openPayload,
+        transactionId,
         settings: {
           displayMode: 'overlay',
           theme: 'light',
           successUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         },
       } as unknown as CheckoutOpenOptions);
-      const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
-      showPopup('info', t('checkoutOpened', { plan: planName }));
-    } catch (paymentError) {
+    } else if (checkoutUrl) {
+      if (typeof window !== 'undefined') {
+        window.location.assign(checkoutUrl);
+      }
+    } else {
+      throw new Error('Billing API did not return a transaction ID or checkout URL.');
+    }
+
+    const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
+    showPopup('info', t('checkoutOpened', { plan: planName }));
+  };
+
+  const handleCheckoutResponse = async (
+    checkout: CheckoutResponse,
+    tier: PlanTier,
+    billingCycle: BillingCycle,
+    bypassTrialWarning: boolean,
+  ) => {
+    const code = readResponseCode(checkout);
+
+    if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
+      await schedulePlanChange(tier, billingCycle, { fromCheckoutConflict: true });
+      return;
+    }
+
+    if (code === 'TRIAL_WILL_BE_CANCELLED' && !bypassTrialWarning) {
+      setTrialWarning({
+        tier,
+        billingCycle,
+        withTrial: false,
+        checkout,
+      });
       setCheckoutPlan(null);
-      setCheckoutError(getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.'));
-      showPopup('error', getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.'));
+      return;
+    }
+
+    await launchCheckout(checkout, tier);
+  };
+
+  const beginCheckout = async (
+    tier: PlanTier,
+    options?: { billingCycle?: BillingCycle; withTrial?: boolean; bypassTrialWarning?: boolean },
+  ) => {
+    const targetCycle = options?.billingCycle ?? cycle;
+    const withTrial = options?.withTrial ?? !isTrial;
+
+    setCheckoutError(null);
+    setCheckoutPlan(tier);
+
+    try {
+      const response = await apiClient.post('/billing/paddle/checkout', {
+        tier,
+        billingCycle: targetCycle,
+        withTrial,
+      });
+
+      await handleCheckoutResponse(response.data as CheckoutResponse, tier, targetCycle, Boolean(options?.bypassTrialWarning));
+    } catch (paymentError) {
+      const code = getBillingErrorCode(paymentError);
+      const responseData = getAxiosResponseData(paymentError) as CheckoutResponse | null;
+
+      if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
+        await schedulePlanChange(tier, targetCycle, { fromCheckoutConflict: true });
+        return;
+      }
+
+      if (code === 'TRIAL_WILL_BE_CANCELLED' && !options?.bypassTrialWarning) {
+        setTrialWarning({
+          tier,
+          billingCycle: targetCycle,
+          withTrial,
+          checkout: responseData,
+        });
+        setCheckoutPlan(null);
+        return;
+      }
+
+      setCheckoutPlan(null);
+      const message = getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.');
+      setCheckoutError(message);
+      showPopup('error', message);
     }
   };
 
-  const cancelSubscription = async () => {
+  const handleContinueTrialCheckout = async () => {
+    if (!trialWarning) return;
+
+    const pending = trialWarning;
+    setTrialWarning(null);
+    setCheckoutPlan(pending.tier);
+
     try {
-      await dispatch(cancelPlanSubscription()).unwrap();
-      showPopup('success', t('subscriptionCancelled'));
+      if (pending.checkout?.transactionId || pending.checkout?.checkoutUrl || pending.checkout?.url) {
+        await launchCheckout(pending.checkout, pending.tier);
+      } else {
+        await beginCheckout(pending.tier, {
+          billingCycle: pending.billingCycle,
+          withTrial: false,
+          bypassTrialWarning: true,
+        });
+      }
     } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to cancel subscription.'));
+      setCheckoutPlan(null);
+      const message = getPaymentErrorMessage(err, 'Unable to start Paddle checkout.');
+      setCheckoutError(message);
+      showPopup('error', message);
     }
   };
 
-  const handlePause = async () => {
-    try {
-      await dispatch(pauseSubscription()).unwrap();
-      showPopup('success', t('subscriptionPausedSuccess'));
-    } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to pause subscription.'));
+  const handlePlanAction = async (tier: PlanTier) => {
+    if (hasExistingPaddleSubscription) {
+      const cancelScheduledChange = Boolean(hasScheduledPlan && currentTier && tier === currentTier);
+      const targetTier = cancelScheduledChange && currentTier ? currentTier : tier;
+      const targetCycle = cancelScheduledChange ? currentBillingCycle : cycle;
+      await schedulePlanChange(targetTier, targetCycle, { cancelScheduledChange });
+      return;
     }
+
+    await beginCheckout(tier, { withTrial: !isTrial });
   };
 
-  const handleResume = async () => {
+  const handleAutoRenewToggle = async (enabled: boolean) => {
     try {
-      await dispatch(resumeSubscription()).unwrap();
-      showPopup('success', t('subscriptionResumed'));
+      await dispatch(setAutoRenew({ enabled })).unwrap();
+      showPopup('success', enabled ? t('autoRenewResumed') : t('autoRenewDisabled'));
     } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to resume subscription.'));
-    }
-  };
-
-  const handleResumeAutoRenew = async () => {
-    try {
-      await dispatch(resumeAutoRenew()).unwrap();
-      showPopup('success', t('autoRenewResumed'));
-    } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to resume auto-renew.'));
+      showPopup('error', getPaymentErrorMessage(err, 'Unable to update auto-renew.'));
     }
   };
 
   const handleUpdatePayment = async () => {
     setUpdatePaymentLoading(true);
+
     try {
       const response = await apiClient.get('/billing/payment-method');
       const updateUrl: string | undefined = response.data?.updateUrl ?? response.data?.portalUrl;
       if (updateUrl) window.location.href = updateUrl;
     } catch {
-      // ignore
+      // Ignore; payment state remains visible and the user can retry.
     } finally {
       setUpdatePaymentLoading(false);
     }
@@ -481,6 +663,7 @@ export default function BillingPage() {
 
   const handleOpenInvoicePortal = async () => {
     setPortalLoading(true);
+
     try {
       const response = await apiClient.get('/billing/portal');
       const portalUrl: string | undefined = response.data?.portalUrl;
@@ -488,7 +671,7 @@ export default function BillingPage() {
         window.open(portalUrl, '_blank', 'noopener,noreferrer');
       }
     } catch {
-      // ignore
+      // Non-fatal; history remains visible.
     } finally {
       setPortalLoading(false);
     }
@@ -505,9 +688,13 @@ export default function BillingPage() {
     }
   };
 
-  // Cleanup polling on unmount
-  useEffect(() => () => { if (pollTimerRef.current) clearTimeout(pollTimerRef.current); }, []);
-  useEffect(() => () => { if (popupTimerRef.current) clearTimeout(popupTimerRef.current); }, []);
+  useEffect(() => () => {
+    if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+  }, []);
+
+  useEffect(() => () => {
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+  }, []);
 
   if (loading) {
     return (
@@ -541,105 +728,90 @@ export default function BillingPage() {
         </div>
       )}
 
+      {trialWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-gray-950">{t('trialWarningTitle')}</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">{t('trialWarningBody')}</p>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setTrialWarning(null);
+                  setCheckoutPlan(null);
+                }}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {t('keepTrial')}
+              </button>
+              <button
+                type="button"
+                onClick={handleContinueTrialCheckout}
+                className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+              >
+                {t('continueToCheckout')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">{t('title')}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t('description')}
-        </p>
+        <p className="mt-1 text-sm text-gray-500">{t('description')}</p>
       </div>
 
-      {/* Trial / referral banner */}
-      {snapshot?.subscription && (snapshot.subscription.isTrial || snapshot.subscription.status === 'trialing') && (
+      {isTrial && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <span className="font-semibold">
-            {snapshot.subscription.trialDaysLeft != null
-              ? t('trialDaysLeft', { days: snapshot.subscription.trialDaysLeft, unit: snapshot.subscription.trialDaysLeft !== 1 ? t('days') : t('day') })
-              : t('trialActive')}
+            {trialDaysLeft != null
+              ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
+              : trialEndsAt
+                ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
+                : t('trialActive')}
           </span>{' '}
           {t('trialConvert')}
         </div>
       )}
 
-      {/* Past-due warning */}
-      {snapshot?.subscription?.status === 'past_due' && (
+      {currentSubscription?.status === 'past_due' && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           <span className="font-semibold">{t('pastDueWarning')}</span>
-          {snapshot.subscription.paddleManaged && (
-            <button
-              type="button"
-              disabled={updatePaymentLoading}
-              onClick={handleUpdatePayment}
-              className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
-            >
-              {updatePaymentLoading ? t('loadingPayment') : t('updatePaymentMethod')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Paused notice */}
-      {snapshot?.subscription?.status === 'paused' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-          <span>
-            <span className="mr-2 inline-block rounded-full bg-gray-300 px-2 py-0.5 text-xs font-semibold uppercase text-gray-700">{t('pausedBadge')}</span>
-            {t('subscriptionPaused')}
-            {snapshot.subscription.currentPeriodEnd && (
-              <> {t('resumeOrExpire', { date: new Date(snapshot.subscription.currentPeriodEnd).toLocaleDateString() })}</>
-            )}
-          </span>
-          {snapshot.subscription.paddleManaged && (
-            <button
-              type="button"
-              disabled={resumeLoading}
-              onClick={handleResume}
-              className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-60"
-            >
-              {resumeLoading ? t('resuming') : t('resume')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Scheduled cancellation notice */}
-      {isCancelScheduled && cancelEffectiveDate && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <span>
-            <span className="mr-2 inline-block rounded-full bg-amber-600 px-2 py-0.5 text-xs font-semibold uppercase text-white">{t('autoRenewOffBadge')}</span>
-            {t('cancellationScheduled', { date: cancelEffectiveDate.toLocaleDateString() })}
-            {scheduledCancelDaysLeft != null && (
-              <> {t('daysRemaining', { days: scheduledCancelDaysLeft, unit: scheduledCancelDaysLeft !== 1 ? t('days') : t('day') })}</>
-            )}
-          </span>
           <button
             type="button"
-            onClick={handleResumeAutoRenew}
-            disabled={resumeAutoRenewLoading}
-            className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-800 disabled:opacity-60"
+            disabled={updatePaymentLoading}
+            onClick={handleUpdatePayment}
+            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
           >
-            {resumeAutoRenewLoading ? t('resuming') : t('resumeAutoRenew')}
+            {updatePaymentLoading ? t('loadingPayment') : t('updatePaymentMethod')}
           </button>
         </div>
       )}
 
-      {hasPendingDowngrade && !isCancelScheduled && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+      {isAutoRenewOff && renewalEndsAt && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <span>
-            {isKoreanLocale
-              ? `다운그레이드 예약됨: ${pendingPlan?.name} (${pendingPlan?.billingCycle === 'annual' ? '연간' : '월간'})`
-              : `Downgrade scheduled: ${pendingPlan?.name} (${pendingPlan?.billingCycle})`}
-            {pendingPlan?.effectiveAt && (
-              <> {isKoreanLocale ? `적용일 ${new Date(pendingPlan.effectiveAt).toLocaleDateString()}` : `on ${new Date(pendingPlan.effectiveAt).toLocaleDateString()}`}</>
-            )}
+            <span className="mr-2 inline-block rounded-full bg-amber-600 px-2 py-0.5 text-xs font-semibold uppercase text-white">
+              {t('autoRenewOffBadge')}
+            </span>
+            {t('autoRenewOffAccess', { date: formatDate(renewalEndsAt) })}
           </span>
+          {canToggleAutoRenew && (
+            <button
+              type="button"
+              onClick={() => handleAutoRenewToggle(true)}
+              disabled={autoRenewLoading}
+              className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-800 disabled:opacity-60"
+            >
+              {autoRenewLoading ? t('resuming') : t('resumeAutoRenew')}
+            </button>
+          )}
         </div>
       )}
 
-      {/* Cancelled notice */}
-      {snapshot?.subscription?.status === 'cancelled' && snapshot.subscription.cancelDate && (
+      {currentSubscription?.status === 'cancelled' && renewalEndsAt && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <span>
-            {t('cancelledAccess', { date: new Date(snapshot.subscription.cancelDate).toLocaleDateString() })}
-          </span>
+          <span>{t('cancelledAccess', { date: formatDate(renewalEndsAt) })}</span>
           <button
             type="button"
             onClick={() => document.getElementById('plan-cards')?.scrollIntoView({ behavior: 'smooth' })}
@@ -660,78 +832,91 @@ export default function BillingPage() {
 
       {!paddleClientToken && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {t('paddleNotConfigured')}
+          {t('paddleOverlayNotConfigured')}
         </div>
       )}
 
-      {/* Subscription status card */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-gray-900">{t('currentPlanLabel', { name: currentPlanName })}</p>
-            <p className="mt-1 text-xs text-gray-500">{hasEffectivePlan ? usageLabel : t('noActivePlan')}</p>
-            {snapshot && hasEffectivePlan && (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-gray-900">{t('currentPlanLabel', { name: currentPlanName })}</p>
+              {isTrial && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                  <Crown className="h-3 w-3" />
+                  {t('proTrialBadge')}
+                </span>
+              )}
+            </div>
+
+            {hasEffectivePlan ? (
               <p className="mt-1 text-xs text-gray-500">
-                {searchUsage.unlimited
-                  ? t('unlimitedSearches')
-                  : t('searchesRemaining', { count: searchUsage.remaining })}
+                {getCycleLabel(currentBillingCycle)} · {currentPlanPrice}
               </p>
-            )}
-            {hasEffectivePlan && snapshot?.alertsRemaining != null && (
-              <p className="mt-1 text-xs text-gray-500">
-                {snapshot.alertsRemaining === -1 ? t('unlimitedAlerts') : t('alertsRemaining', { count: snapshot.alertsRemaining })}
-              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">{t('noActivePlan')}</p>
             )}
 
-            {/* Upload quota progress bar */}
-            {hasEffectivePlan && snapshot && snapshot.usage.imageUploadLimit > 0 && (() => {
-              const used = searchUsage.used;
-              const total = searchUsage.limit;
-              const pct = Math.min(100, Math.max(0, Math.round((used / total) * 100)));
-              return (
-                <div className="mt-3 max-w-xs">
-                  <div className="mb-1 flex justify-between text-[10px] text-gray-400">
-                    <span>{t('uploadsUsed')}</span>
-                    <span>{used} / {total}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div className="h-full rounded-full bg-gray-900 transition-all" style={{ width: `${pct}%` }} />
-                  </div>
+            {hasEffectivePlan && (
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('imageUploads')}</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">{formatLimitCount(currentResourceLimits.imageUploadLimit)}</p>
                 </div>
-              );
-            })()}
-
-            {/* Alerts quota — unlimited indicator */}
-            {hasEffectivePlan && snapshot && snapshot.usage.alertLimit === 0 && (
-              <div className="mt-3 max-w-xs">
-                <div className="mb-1 flex justify-between text-[10px] text-gray-400">
-                  <span>{t('alerts')}</span>
-                  <span>{t('unlimited')}</span>
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('alerts')}</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">{formatLimitCount(currentResourceLimits.alertLimit)}</p>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                  <div className="h-full w-full rounded-full bg-emerald-500" />
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('pdfReports')}</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">
+                    {currentResourceLimits.pdfEnabled ? t('included') : t('notIncluded')}
+                  </p>
                 </div>
               </div>
             )}
-            {hasEffectivePlan && snapshot?.subscription?.nextBillingDate && (
-              <p className="mt-1 text-xs text-gray-500">
-                {t('nextBilling', { date: new Date(snapshot.subscription.nextBillingDate).toLocaleDateString() })}
-              </p>
+
+            {hasEffectivePlan && snapshot && snapshot.usage.imageUploadLimit > 0 && (
+              <div className="mt-4 max-w-sm">
+                <div className="mb-1 flex justify-between text-[10px] text-gray-400">
+                  <span>{t('uploadsUsed')}</span>
+                  <span>
+                    {searchUsage.used} / {searchUsage.limit}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-gray-900 transition-all"
+                    style={{ width: `${Math.min(100, Math.max(0, Math.round((searchUsage.used / searchUsage.limit) * 100)))}%` }}
+                  />
+                </div>
+              </div>
             )}
-            {autoPayEnabled && snapshot?.subscription?.billingCycle && !isCancelScheduled && (
-              <p className="mt-1 text-xs text-gray-500">
-                {t('autoPayActive', { cycle: snapshot.subscription.billingCycle === 'annual' ? t('year') : t('month') })}
-              </p>
+
+            {hasEffectivePlan && (
+              <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                <p className="font-semibold text-gray-900">
+                  {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
+                </p>
+                <p className="mt-1">
+                  {autoRenewEnabled
+                    ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
+                    : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) })}
+                </p>
+              </div>
             )}
-            {isCancelScheduled && cancelEffectiveDate && (
-              <p className="mt-1 text-xs text-amber-700">
-                {t('autoRenewOffAccess', { date: cancelEffectiveDate.toLocaleDateString() })}
-              </p>
-            )}
-            {!snapshot?.subscription?.paddleManaged && snapshot?.subscription && (
-              <p className="mt-1 text-xs text-gray-400">
-                {t('subscribeToPaidPlan')}
-              </p>
+
+            {visibleScheduledPlan && (
+              <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+                <p className="font-semibold text-sky-950">{t('scheduledPlanTitle')}</p>
+                <p className="mt-1">
+                  {visibleScheduledPlan.name} · {getCycleLabel(visibleScheduledPlan.billingCycle)}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                  <span>{t('scheduledPlanChargeAt', { date: formatDate(visibleScheduledPlan.chargeAt) })}</span>
+                  <span>{t('scheduledPlanActivatesAt', { date: formatDate(visibleScheduledPlan.activatesAt) })}</span>
+                </div>
+              </div>
             )}
           </div>
 
@@ -759,47 +944,39 @@ export default function BillingPage() {
               </button>
             </div>
 
-            {/* Renewal controls — only for active + paddle-managed */}
-            {snapshot?.subscription?.status === 'active' && snapshot.subscription.paddleManaged && (
+            {canToggleAutoRenew && (
               <button
                 type="button"
-                onClick={isCancelScheduled ? handleResumeAutoRenew : cancelSubscription}
-                disabled={cancelLoading || resumeAutoRenewLoading}
-                className={[
-                  'rounded-lg px-3 py-2 text-xs font-medium disabled:opacity-60',
-                  isCancelScheduled
-                    ? 'border border-red-200 text-red-600 hover:bg-red-50'
-                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50',
-                ].join(' ')}
+                onClick={() => handleAutoRenewToggle(!autoRenewEnabled)}
+                disabled={autoRenewLoading}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
               >
-                {isCancelScheduled
-                  ? (resumeAutoRenewLoading ? t('resuming') : isKoreanLocale ? '갱신 재개' : 'Resume renewal')
-                  : (cancelLoading ? t('cancelling') : isKoreanLocale ? '자동 갱신 끄기' : 'Turn off renewal')}
+                {autoRenewLoading
+                  ? t('processing')
+                  : autoRenewEnabled
+                    ? t('turnRenewalOff')
+                    : t('turnRenewalOn')}
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Plan cards */}
       <div id="plan-cards" className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {plans.map((plan) => {
           const price = cycle === 'annual' ? plan.pricing.annual : plan.pricing.monthly;
           const isCurrent = currentTier ? plan.tier === currentTier : false;
-          const isCurrentPaidPlan =
-            isCurrent &&
-            !!currentSubscription &&
-            currentSubscription.status === 'active' &&
-            !currentSubscription.isTrial &&
-            !currentSubscription.isTrialing;
-          const isCurrentTrialPlan = isCurrent && plan.tier === 'pro' && isProTrial;
+          const isCurrentPaidPlan = isCurrent && hasExistingPaddleSubscription;
+          const isCurrentSelectedCycle = currentBillingCycle === cycle;
+          const isPendingTargetPlan =
+            !!visibleScheduledPlan &&
+            visibleScheduledPlan.tier === plan.tier &&
+            visibleScheduledPlan.billingCycle === cycle;
           const isWorking = savingPlan === plan.tier || checkoutPlan === plan.tier || upgradeLoading === plan.tier;
-          const isPaddleUnavailable = !paddleClientToken && !hasPaddleManagedSubscription;
-          const isPendingTargetPlan = !!pendingPlan && pendingPlan.tier === plan.tier;
-          const isDisabled = isWorking || isPaddleUnavailable || (isCurrentPaidPlan && !hasPendingDowngrade) || (isPendingTargetPlan && hasPendingDowngrade);
+          const isDisabled = isWorking || isPendingTargetPlan || (isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan);
           const planButtonClass = [
             'mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-            isCurrentPaidPlan
+            isCurrentPaidPlan && isCurrentSelectedCycle
               ? 'border border-gray-200 bg-gray-200 text-gray-500'
               : 'bg-gray-900 text-white hover:bg-gray-800',
           ].join(' ');
@@ -812,7 +989,7 @@ export default function BillingPage() {
                 isCurrent ? 'border-gray-900 ring-1 ring-gray-900/10' : 'border-gray-200',
               ].join(' ')}
             >
-              {isCurrentTrialPlan && (
+              {isCurrent && isTrial && (
                 <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                   <Crown className="h-3 w-3" />
                   {t('proTrialBadge')}
@@ -821,19 +998,23 @@ export default function BillingPage() {
 
               <h2 className="text-lg font-semibold text-gray-900">{plan.name}</h2>
               <p className="mt-2 text-2xl font-bold text-gray-900">{formatPrice(price)}</p>
-              <p className="text-xs text-gray-500">{t('perMonth')} ({cycle === 'annual' ? t('billedAnnually') : t('billedMonthly')})</p>
+              <p className="text-xs text-gray-500">
+                {t('perMonth')} ({cycle === 'annual' ? t('billedAnnually') : t('billedMonthly')})
+              </p>
 
-              {isCurrentTrialPlan && (
+              {isCurrent && isTrial && (
                 <p className="mt-2 text-xs font-medium text-gray-700">
-                  {currentSubscription?.trialDaysLeft != null
-                    ? t('trialDaysLeftCard', { days: currentSubscription.trialDaysLeft, unit: currentSubscription.trialDaysLeft !== 1 ? t('days') : t('day') })
+                  {trialDaysLeft != null
+                    ? t('trialDaysLeftCard', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
                     : t('trialActiveCard')}
                 </p>
               )}
 
-              <p className="mt-2 text-xs text-gray-500">
-                {t('autoPayStarts', { cycle: cycle === 'annual' ? t('yearly') : t('monthly') })}
-              </p>
+              {!hasExistingPaddleSubscription && (
+                <p className="mt-2 text-xs text-gray-500">
+                  {t('autoPayStarts', { cycle: cycle === 'annual' ? t('yearly') : t('monthly') })}
+                </p>
+              )}
 
               <div className="mt-4 space-y-2 text-sm text-gray-700">
                 {getLocalizedPlanFeatures(plan).map((feature) => (
@@ -850,16 +1031,15 @@ export default function BillingPage() {
                 onClick={() => handlePlanAction(plan.tier)}
                 className={planButtonClass}
               >
-                {isCurrentPaidPlan
+                {isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan
                   ? t('currentPlanButton')
-                  : getPlanCtaLabel(plan.tier, isWorking)}
+                  : getPlanCtaLabel(plan.tier, isWorking, isPendingTargetPlan)}
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* Billing history */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -898,17 +1078,19 @@ export default function BillingPage() {
               <tbody>
                 {historyItems.map((item) => (
                   <tr key={item._id} className="border-b border-gray-100 text-gray-700">
-                    <td className="px-2 py-2">{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td className="px-2 py-2">{formatDate(item.createdAt)}</td>
                     <td className="px-2 py-2">{formatPaymentAmount(item.amount, item.currency)}</td>
                     <td className="px-2 py-2">
-                      <span className={[
-                        'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase',
-                        item.status === 'completed'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : item.status === 'refunded'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-red-100 text-red-700',
-                      ].join(' ')}>
+                      <span
+                        className={[
+                          'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase',
+                          item.status === 'completed'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : item.status === 'refunded'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-red-100 text-red-700',
+                        ].join(' ')}
+                      >
                         {item.status}
                       </span>
                     </td>
