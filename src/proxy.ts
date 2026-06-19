@@ -33,7 +33,6 @@ export default function proxy(request: NextRequest) {
     const redirectedSegments = [...segments];
     redirectedSegments[legacySignupIndex] = 'signup';
     redirectUrl.pathname = `/${redirectedSegments.join('/')}`;
-    redirectUrl.searchParams.set('step', 'account');
     return NextResponse.redirect(redirectUrl);
   }
 

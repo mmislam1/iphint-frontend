@@ -440,8 +440,11 @@ function SignupAccountStep() {
 
 function SignupStepContent() {
   const searchParams = useSearchParams();
+  const hasCompletedQuestionnaire = useSelector(
+    (state: RootState) => Boolean(state.signupQuestionnaire.completedAt),
+  );
 
-  if (searchParams.get('step') !== 'account') {
+  if (searchParams.get('step') !== 'account' || !hasCompletedQuestionnaire) {
     return <SignupQuestionnaireStep />;
   }
 
