@@ -133,6 +133,56 @@ const extractApiErrorMessage = (value: unknown): string | null => {
   return null;
 };
 
+const extractApiMessageList = (value: unknown): string[] => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(extractApiMessageList);
+  }
+
+  if (value && typeof value === 'object') {
+    const nested = value as { message?: unknown; error?: unknown };
+
+    if ('message' in nested) {
+      return extractApiMessageList(nested.message);
+    }
+
+    if ('error' in nested) {
+      return extractApiMessageList(nested.error);
+    }
+  }
+
+  return [];
+};
+
+export const getApiPayloadMessages = (payload: unknown) => {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      messages: extractApiMessageList(payload),
+      warnings: [] as string[],
+      errors: [] as string[],
+    };
+  }
+
+  const value = payload as {
+    message?: unknown;
+    messages?: unknown;
+    warning?: unknown;
+    warnings?: unknown;
+    error?: unknown;
+    errors?: unknown;
+  };
+
+  return {
+    messages: [...extractApiMessageList(value.message), ...extractApiMessageList(value.messages)],
+    warnings: [...extractApiMessageList(value.warning), ...extractApiMessageList(value.warnings)],
+    errors: [...extractApiMessageList(value.error), ...extractApiMessageList(value.errors)],
+  };
+};
+
 export const getApiErrorMessage = (error: unknown, fallback: string) => {
   if (axios.isAxiosError(error)) {
     const responseMessage = extractApiErrorMessage(error.response?.data);

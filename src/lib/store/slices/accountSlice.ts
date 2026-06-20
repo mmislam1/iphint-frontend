@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { apiClient, getApiErrorMessage } from '@/lib/api';
+import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
 import { detectCountryCodeByIp } from '../../currency';
 
 export type PlanTier = 'starter' | 'pro' | 'premium';
@@ -97,11 +97,17 @@ export interface BillingSnapshot {
   };
 }
 
-type BillingPageData = {
+export type BillingPageData = {
   plans: BillingPlan[];
   snapshot: BillingSnapshot | null;
   countryCode: string;
   code?: string;
+  messages?: string[];
+  warnings?: string[];
+};
+
+type FetchBillingPageDataOptions = {
+  includeMessages?: boolean;
 };
 
 export interface ReferralStatus {
@@ -201,6 +207,25 @@ const getApiErrorCode = (error: unknown) => {
   return extractApiCode(error);
 };
 
+const BILLING_API_MESSAGE_MISSING = 'Unable to update billing right now.';
+
+const withBillingApiMessages = (data: BillingPageData, payloads: unknown[]): BillingPageData => {
+  const messages: string[] = [];
+  const warnings: string[] = [];
+
+  payloads.forEach((payload) => {
+    const extracted = getApiPayloadMessages(payload);
+    messages.push(...extracted.messages);
+    warnings.push(...extracted.warnings);
+  });
+
+  return {
+    ...data,
+    ...(messages.length ? { messages } : {}),
+    ...(warnings.length ? { warnings } : {}),
+  };
+};
+
 export const fetchSubscriptionSnapshot = createAsyncThunk<BillingSnapshot, void, { rejectValue: string }>(
   'account/fetchSubscriptionSnapshot',
   async (_, { rejectWithValue }) => {
@@ -235,13 +260,15 @@ export const fetchBillingPageData = createAsyncThunk<
       countryCodePromise,
     ]);
 
-    return {
+    const data: BillingPageData = {
       plans: Array.isArray(plansResponse.data?.plans) ? plansResponse.data.plans : [],
       snapshot: (snapshotResponse.data ?? null) as BillingSnapshot | null,
       countryCode,
-      ...(messages.length ? { messages } : {}),
-      ...(warnings.length ? { warnings } : {}),
     };
+
+    return options?.includeMessages
+      ? withBillingApiMessages(data, [plansResponse.data, snapshotResponse.data])
+      : data;
   } catch (error) {
     return rejectWithValue(getApiErrorMessage(error, 'Failed to load billing data.'));
   }
@@ -318,8 +345,11 @@ export const setAutoRenew = createAsyncThunk<
   { rejectValue: string }
 >('account/setAutoRenew', async ({ enabled }, { dispatch, rejectWithValue }) => {
   try {
+    let responsePayload: unknown = null;
+
     try {
-      await apiClient.post('/billing/auto-renew', { enabled });
+      const response = await apiClient.post('/billing/auto-renew', { enabled });
+      responsePayload = response.data;
     } catch (error) {
       const status = axios.isAxiosError(error) ? error.response?.status : undefined;
       const shouldUseLegacyFallback = status === 404 || status === 405;
@@ -328,10 +358,12 @@ export const setAutoRenew = createAsyncThunk<
         throw error;
       }
 
-      await apiClient.post(enabled ? '/billing/resume-auto-renew' : '/billing/cancel');
+      const response = await apiClient.post(enabled ? '/billing/resume-auto-renew' : '/billing/cancel');
+      responsePayload = response.data;
     }
 
-    return await dispatch(fetchBillingPageData()).unwrap();
+    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
+    return withBillingApiMessages(refreshed, [responsePayload]);
   } catch (error) {
     return rejectWithValue(
       getApiErrorMessage(error, enabled ? 'Failed to turn renewal on.' : 'Failed to turn renewal off.'),
@@ -348,14 +380,16 @@ export const upgradeSubscription = createAsyncThunk<
     const response = await apiClient.patch('/billing/subscription', payload);
     const refreshed = await dispatch(fetchBillingPageData()).unwrap();
     const code = extractApiCode(response.data);
+    const withMessages = withBillingApiMessages(refreshed, [response.data]);
 
-    return code ? { ...refreshed, code } : refreshed;
+    return code ? { ...withMessages, code } : withMessages;
   } catch (error) {
     const code = getApiErrorCode(error);
 
     if (code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED') {
       const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-      return { ...refreshed, code };
+      const responseData = axios.isAxiosError(error) ? error.response?.data : error;
+      return { ...withBillingApiMessages(refreshed, [responseData]), code };
     }
 
     return rejectWithValue(getApiErrorMessage(error, 'Failed to change subscription.'));

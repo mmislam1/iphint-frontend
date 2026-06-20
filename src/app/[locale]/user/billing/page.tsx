@@ -5,10 +5,12 @@ import axios from 'axios';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, Crown } from 'lucide-react';
-import { apiClient, getApiErrorMessage } from '@/lib/api';
+import { toast } from 'sonner';
+import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
+  type BillingPageData,
   fetchBillingPageData,
   setAutoRenew,
   upgradeSubscription,
@@ -41,11 +43,6 @@ interface PendingTrialCheckout {
   withTrial: boolean;
   checkout: CheckoutResponse | null;
 }
-
-type BillingPopupMessage = {
-  type: 'success' | 'error' | 'info' | 'warning';
-  text: string;
-};
 
 interface NormalizedScheduledPlan {
   tier: PlanTier | null;
@@ -105,6 +102,26 @@ const getPaddleEventTransactionId = (event: PaddleEventData) => {
   return typeof transaction === 'string' && transaction.trim() ? transaction.trim() : null;
 };
 
+type BillingToastType = 'success' | 'error' | 'info' | 'warning';
+
+const showToast = (type: BillingToastType, text: string) => {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+
+  toast[type](trimmed);
+  return true;
+};
+
+const showApiPayloadToasts = (payload: unknown, messageType: BillingToastType = 'info') => {
+  const { errors, warnings, messages } = getApiPayloadMessages(payload);
+
+  errors.forEach((message) => showToast('error', message));
+  warnings.forEach((message) => showToast('warning', message));
+  messages.forEach((message) => showToast(messageType, message));
+
+  return errors.length + warnings.length + messages.length > 0;
+};
+
 export default function BillingPage() {
   const dispatch = useAppDispatch();
   const { plans, loading, error, savingPlan, autoRenewLoading, upgradeLoading, countryCode } = useAppSelector(
@@ -117,7 +134,6 @@ export default function BillingPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanTier | null>(null);
   const [trialWarning, setTrialWarning] = useState<PendingTrialCheckout | null>(null);
-  const [popupMessage, setPopupMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<BillingHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -126,8 +142,6 @@ export default function BillingPage() {
   const paddleRef = useRef<Paddle | null>(null);
   const paddlePromiseRef = useRef<Promise<Paddle> | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const popupQueueRef = useRef<BillingPopupMessage[]>([]);
   const activeCheckoutTransactionIdRef = useRef<string | null>(null);
 
   const isKoreanLocale = locale === 'kr';
@@ -164,18 +178,11 @@ export default function BillingPage() {
     [t],
   );
 
-  const showPopup = useCallback((type: 'success' | 'error' | 'info', text: string) => {
-    setPopupMessage({ type, text });
-
-    const nextPopup = popupQueueRef.current.shift();
-    if (!nextPopup) return;
-
-    setPopupMessage(nextPopup);
-    popupTimerRef.current = setTimeout(() => {
-      setPopupMessage(null);
-      popupTimerRef.current = null;
-      flushPopupQueue();
-    }, 3500);
+  const showBillingResult = useCallback((result: BillingPageData, type: BillingToastType, fallback?: string) => {
+    const showedPayloadMessage = showApiPayloadToasts(result, type);
+    if (!showedPayloadMessage && fallback) {
+      showToast(type, fallback);
+    }
   }, []);
 
   useEffect(() => {
@@ -210,7 +217,7 @@ export default function BillingPage() {
         setHistoryItems(Array.isArray(response.data?.items) ? response.data.items : []);
       } catch (err) {
         if (!active) return;
-        setHistoryError(getPaymentErrorMessage(err));
+        setHistoryError(getPaymentErrorMessage(err, 'Unable to load billing history.'));
       } finally {
         if (active) setHistoryLoading(false);
       }
@@ -221,7 +228,7 @@ export default function BillingPage() {
     return () => {
       active = false;
     };
-  }, [showBillingResult]);
+  }, []);
 
   const brief = snapshot?.brief ?? null;
   const currentSubscription = snapshot?.subscription ?? null;
@@ -406,7 +413,11 @@ export default function BillingPage() {
     return isKoreanLocale ? `${getPlanName(planTier)} 구독` : `Subscribe to ${getPlanName(planTier)}`;
   };
 
-  const schedulePlanChange = async (tier: PlanTier, billingCycle: BillingCycle) => {
+  const schedulePlanChange = async (
+    tier: PlanTier,
+    billingCycle: BillingCycle,
+    options?: { cancelScheduledChange?: boolean; fromCheckoutConflict?: boolean },
+  ) => {
     setCheckoutError(null);
 
     try {
@@ -419,16 +430,18 @@ export default function BillingPage() {
       ).unwrap();
 
       if (result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED') {
-        showPopup('info', t('autoRenewScheduleCancelled'));
+        showBillingResult(result, 'info', t('autoRenewScheduleCancelled'));
       } else if (options?.cancelScheduledChange) {
-        showPopup('success', t('scheduledPlanCancelled'));
+        showBillingResult(result, 'success', t('scheduledPlanCancelled'));
       } else if (options?.fromCheckoutConflict) {
-        showPopup('info', t('activeSubscriptionChangeStarted'));
+        showBillingResult(result, 'info', t('activeSubscriptionChangeStarted'));
       } else {
-        showPopup('success', t('planChangeScheduled'));
+        showBillingResult(result, 'success', t('planChangeScheduled'));
       }
     } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
+      if (!showApiPayloadToasts(getAxiosResponseData(err), 'error')) {
+        showToast('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
+      }
     } finally {
       setCheckoutPlan(null);
     }
@@ -477,7 +490,8 @@ export default function BillingPage() {
       if (event.name === 'checkout.error' || event.name === 'checkout.failed') {
         activeCheckoutTransactionIdRef.current = null;
         setCheckoutPlan(null);
-        setCheckoutError(BILLING_API_MESSAGE_MISSING);
+        setCheckoutError(t('checkoutError'));
+        showToast('error', t('checkoutError'));
         return;
       }
 
@@ -520,7 +534,7 @@ export default function BillingPage() {
     return paddlePromiseRef.current;
   };
 
-  const launchCheckout = async (checkout: CheckoutResponse) => {
+  const launchCheckout = async (checkout: CheckoutResponse, tier: PlanTier) => {
     const transactionId = checkout.transactionId;
     const checkoutUrl = checkout.checkoutUrl ?? checkout.url;
 
@@ -544,7 +558,7 @@ export default function BillingPage() {
     }
 
     const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
-    showPopup('info', t('checkoutOpened', { plan: planName }));
+    showToast('info', t('checkoutOpened', { plan: planName }));
   };
 
   const handleCheckoutResponse = async (
@@ -571,7 +585,7 @@ export default function BillingPage() {
       return;
     }
 
-    await launchCheckout(checkout);
+    await launchCheckout(checkout, tier);
   };
 
   const beginCheckout = async (
@@ -591,17 +605,22 @@ export default function BillingPage() {
         withTrial,
       });
 
-      await handleCheckoutResponse(response.data as CheckoutResponse, tier, targetCycle, Boolean(options?.bypassTrialWarning));
+      const checkout = response.data as CheckoutResponse;
+      const code = readResponseCode(checkout);
+      showApiPayloadToasts(checkout, code === 'TRIAL_WILL_BE_CANCELLED' ? 'warning' : 'info');
+      await handleCheckoutResponse(checkout, tier, targetCycle, Boolean(options?.bypassTrialWarning));
     } catch (paymentError) {
       const code = getBillingErrorCode(paymentError);
       const responseData = getAxiosResponseData(paymentError) as CheckoutResponse | null;
 
       if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
+        showApiPayloadToasts(responseData, 'info');
         await schedulePlanChange(tier, targetCycle, { fromCheckoutConflict: true });
         return;
       }
 
       if (code === 'TRIAL_WILL_BE_CANCELLED' && !options?.bypassTrialWarning) {
+        showApiPayloadToasts(responseData, 'warning');
         setTrialWarning({
           tier,
           billingCycle: targetCycle,
@@ -615,7 +634,9 @@ export default function BillingPage() {
       setCheckoutPlan(null);
       const message = getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.');
       setCheckoutError(message);
-      showPopup('error', message);
+      if (!showApiPayloadToasts(responseData, 'error')) {
+        showToast('error', message);
+      }
     }
   };
 
@@ -628,7 +649,7 @@ export default function BillingPage() {
 
     try {
       if (pending.checkout?.transactionId || pending.checkout?.checkoutUrl || pending.checkout?.url) {
-        await launchCheckout(pending.checkout);
+        await launchCheckout(pending.checkout, pending.tier);
       } else {
         await beginCheckout(pending.tier, {
           billingCycle: pending.billingCycle,
@@ -640,7 +661,9 @@ export default function BillingPage() {
       setCheckoutPlan(null);
       const message = getPaymentErrorMessage(err, 'Unable to start Paddle checkout.');
       setCheckoutError(message);
-      showPopup('error', message);
+      if (!showApiPayloadToasts(getAxiosResponseData(err), 'error')) {
+        showToast('error', message);
+      }
     }
   };
 
@@ -658,10 +681,12 @@ export default function BillingPage() {
 
   const handleAutoRenewToggle = async (enabled: boolean) => {
     try {
-      await dispatch(setAutoRenew({ enabled })).unwrap();
-      showPopup('success', enabled ? t('autoRenewResumed') : t('autoRenewDisabled'));
+      const result = await dispatch(setAutoRenew({ enabled })).unwrap();
+      showBillingResult(result, 'success', enabled ? t('autoRenewResumed') : t('autoRenewDisabled'));
     } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to update auto-renew.'));
+      if (!showApiPayloadToasts(getAxiosResponseData(err), 'error')) {
+        showToast('error', getPaymentErrorMessage(err, 'Unable to update auto-renew.'));
+      }
     }
   };
 
@@ -670,10 +695,11 @@ export default function BillingPage() {
 
     try {
       const response = await apiClient.get('/billing/payment-method');
+      showApiPayloadToasts(response.data, 'info');
       const updateUrl: string | undefined = response.data?.updateUrl ?? response.data?.portalUrl;
       if (updateUrl) window.location.href = updateUrl;
-    } catch {
-      // Ignore; payment state remains visible and the user can retry.
+    } catch (err) {
+      showApiPayloadToasts(getAxiosResponseData(err), 'error');
     } finally {
       setUpdatePaymentLoading(false);
     }
@@ -684,12 +710,13 @@ export default function BillingPage() {
 
     try {
       const response = await apiClient.get('/billing/portal');
+      showApiPayloadToasts(response.data, 'info');
       const portalUrl: string | undefined = response.data?.portalUrl;
       if (portalUrl) {
         window.open(portalUrl, '_blank', 'noopener,noreferrer');
       }
-    } catch {
-      // Non-fatal; history remains visible.
+    } catch (err) {
+      showApiPayloadToasts(getAxiosResponseData(err), 'error');
     } finally {
       setPortalLoading(false);
     }
@@ -710,10 +737,6 @@ export default function BillingPage() {
     if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
   }, []);
 
-  useEffect(() => () => {
-    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
-  }, []);
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -730,22 +753,6 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      {popupMessage && (
-        <div
-          className={`fixed right-4 top-4 z-50 max-w-sm rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-sm ${
-            popupMessage.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-              : popupMessage.type === 'info'
-                ? 'border-sky-200 bg-sky-50 text-sky-900'
-                : 'border-red-200 bg-red-50 text-red-800'
-          }`}
-          role="status"
-          aria-live="polite"
-        >
-          <p className="text-sm font-medium">{popupMessage.text}</p>
-        </div>
-      )}
-
       {trialWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
