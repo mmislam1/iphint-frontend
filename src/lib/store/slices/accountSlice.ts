@@ -1,17 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { apiClient, getApiErrorMessage } from '@/lib/api';
-import {
-  BILLING_API_MESSAGE_MISSING,
-  assertBillingApiSuccess,
-  extractBillingApiMeta,
-  extractBillingCode,
-  extractBillingMessage,
-  extractBillingWarnings,
-  getBillingApiErrorMessage,
-  getBillingErrorPayload,
-  type BillingApiWarning,
-} from '@/lib/billingApi';
 import { detectCountryCodeByIp } from '../../currency';
 
 export type PlanTier = 'starter' | 'pro' | 'premium';
@@ -112,21 +101,7 @@ type BillingPageData = {
   plans: BillingPlan[];
   snapshot: BillingSnapshot | null;
   countryCode: string;
-  messages?: string[];
-  message?: string;
   code?: string;
-  warnings?: BillingApiWarning[];
-};
-
-type FetchBillingPageDataOptions = {
-  includeMessages?: boolean;
-};
-
-type BillingActionReject = {
-  message: string;
-  code?: string;
-  warnings?: BillingApiWarning[];
-  billingMessageFromPayload?: boolean;
 };
 
 export interface ReferralStatus {
@@ -209,27 +184,21 @@ const getUnreadCandidate = (
   notificationId: string,
 ) => items.find((item) => item._id === notificationId && !item.isRead);
 
-const withBillingApiMeta = (data: BillingPageData, source: unknown): BillingPageData => ({
-  ...data,
-  ...extractBillingApiMeta(source),
-});
-
-const createBillingActionReject = (error: unknown): BillingActionReject => {
-  const meta = extractBillingApiMeta(getBillingErrorPayload(error));
-
-  return {
-    ...meta,
-    message: getBillingApiErrorMessage(error),
-    billingMessageFromPayload: Boolean(meta.message),
-  };
-};
-
-const getBillingActionErrorMessage = (value: BillingActionReject | string | undefined) => {
-  if (typeof value === 'string') {
-    return value;
+const extractApiCode = (value: unknown): string | null => {
+  if (!value || typeof value !== 'object' || !('code' in value)) {
+    return null;
   }
 
-  return value?.message ?? BILLING_API_MESSAGE_MISSING;
+  const code = (value as { code?: unknown }).code;
+  return typeof code === 'string' && code.trim() ? code.trim() : null;
+};
+
+const getApiErrorCode = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    return extractApiCode(error.response?.data);
+  }
+
+  return extractApiCode(error);
 };
 
 export const fetchSubscriptionSnapshot = createAsyncThunk<BillingSnapshot, void, { rejectValue: string }>(
@@ -237,9 +206,9 @@ export const fetchSubscriptionSnapshot = createAsyncThunk<BillingSnapshot, void,
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get('/billing/subscription');
-      return assertBillingApiSuccess(response.data) as BillingSnapshot;
+      return response.data as BillingSnapshot;
     } catch (error) {
-      return rejectWithValue(getBillingApiErrorMessage(error));
+      return rejectWithValue(getApiErrorMessage(error, 'Failed to load subscription data.'));
     }
   },
 );
@@ -266,116 +235,91 @@ export const fetchBillingPageData = createAsyncThunk<
       countryCodePromise,
     ]);
 
-    const plansData = assertBillingApiSuccess(plansResponse.data);
-    const snapshotData = assertBillingApiSuccess(snapshotResponse.data);
-    const includeMessages = Boolean(options?.includeMessages);
-    const messages = includeMessages
-      ? [extractBillingMessage(plansData), extractBillingMessage(snapshotData)].filter((message): message is string =>
-          Boolean(message),
-        )
-      : [];
-    const warnings = includeMessages
-      ? [...extractBillingWarnings(plansData), ...extractBillingWarnings(snapshotData)]
-      : [];
-
     return {
-      plans: Array.isArray(plansData?.plans) ? plansData.plans : [],
-      snapshot: (snapshotData ?? null) as BillingSnapshot | null,
+      plans: Array.isArray(plansResponse.data?.plans) ? plansResponse.data.plans : [],
+      snapshot: (snapshotResponse.data ?? null) as BillingSnapshot | null,
       countryCode,
       ...(messages.length ? { messages } : {}),
       ...(warnings.length ? { warnings } : {}),
     };
   } catch (error) {
-    return rejectWithValue(getBillingApiErrorMessage(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to load billing data.'));
   }
 });
 
 export const subscribeToPlan = createAsyncThunk<
   BillingPageData,
   { tier: PlanTier; billingCycle: BillingCycle },
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/subscribeToPlan', async (payload, { dispatch, rejectWithValue }) => {
   try {
-    const response = await apiClient.post('/billing/subscribe', payload);
-    const responseData = assertBillingApiSuccess(response.data);
-    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-    return withBillingApiMeta(refreshed, responseData);
+    await apiClient.post('/billing/subscribe', payload);
+    return await dispatch(fetchBillingPageData()).unwrap();
   } catch (error) {
-    return rejectWithValue(createBillingActionReject(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to update subscription.'));
   }
 });
 
 export const cancelPlanSubscription = createAsyncThunk<
   BillingPageData,
   void,
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/cancelPlanSubscription', async (_, { dispatch, rejectWithValue }) => {
   try {
-    const response = await apiClient.post('/billing/cancel');
-    const responseData = assertBillingApiSuccess(response.data);
-    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-    return withBillingApiMeta(refreshed, responseData);
+    await apiClient.post('/billing/cancel');
+    return await dispatch(fetchBillingPageData()).unwrap();
   } catch (error) {
-    return rejectWithValue(createBillingActionReject(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to cancel subscription.'));
   }
 });
 
 export const pauseSubscription = createAsyncThunk<
   BillingPageData,
   void,
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/pauseSubscription', async (_, { dispatch, rejectWithValue }) => {
   try {
-    const response = await apiClient.post('/billing/pause');
-    const responseData = assertBillingApiSuccess(response.data);
-    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-    return withBillingApiMeta(refreshed, responseData);
+    await apiClient.post('/billing/pause');
+    return await dispatch(fetchBillingPageData()).unwrap();
   } catch (error) {
-    return rejectWithValue(createBillingActionReject(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to pause subscription.'));
   }
 });
 
 export const resumeSubscription = createAsyncThunk<
   BillingPageData,
   void,
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/resumeSubscription', async (_, { dispatch, rejectWithValue }) => {
   try {
-    const response = await apiClient.post('/billing/resume');
-    const responseData = assertBillingApiSuccess(response.data);
-    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-    return withBillingApiMeta(refreshed, responseData);
+    await apiClient.post('/billing/resume');
+    return await dispatch(fetchBillingPageData()).unwrap();
   } catch (error) {
-    return rejectWithValue(createBillingActionReject(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to resume subscription.'));
   }
 });
 
 export const resumeAutoRenew = createAsyncThunk<
   BillingPageData,
   void,
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/resumeAutoRenew', async (_, { dispatch, rejectWithValue }) => {
   try {
-    const response = await apiClient.post('/billing/resume-auto-renew');
-    const responseData = assertBillingApiSuccess(response.data);
-    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-    return withBillingApiMeta(refreshed, responseData);
+    await apiClient.post('/billing/resume-auto-renew');
+    return await dispatch(fetchBillingPageData()).unwrap();
   } catch (error) {
-    return rejectWithValue(createBillingActionReject(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to resume auto-renew.'));
   }
 });
 
 export const setAutoRenew = createAsyncThunk<
   BillingPageData,
   { enabled: boolean },
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/setAutoRenew', async ({ enabled }, { dispatch, rejectWithValue }) => {
   try {
-    let responseData: unknown;
-
     try {
-      const response = await apiClient.post('/billing/auto-renew', { enabled });
-      responseData = assertBillingApiSuccess(response.data);
+      await apiClient.post('/billing/auto-renew', { enabled });
     } catch (error) {
       const status = axios.isAxiosError(error) ? error.response?.status : undefined;
       const shouldUseLegacyFallback = status === 404 || status === 405;
@@ -384,15 +328,13 @@ export const setAutoRenew = createAsyncThunk<
         throw error;
       }
 
-      const response = await apiClient.post(enabled ? '/billing/resume-auto-renew' : '/billing/cancel');
-      responseData = assertBillingApiSuccess(response.data);
+      await apiClient.post(enabled ? '/billing/resume-auto-renew' : '/billing/cancel');
     }
 
-    const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-    return withBillingApiMeta(refreshed, responseData);
+    return await dispatch(fetchBillingPageData()).unwrap();
   } catch (error) {
     return rejectWithValue(
-      createBillingActionReject(error),
+      getApiErrorMessage(error, enabled ? 'Failed to turn renewal on.' : 'Failed to turn renewal off.'),
     );
   }
 });
@@ -400,24 +342,23 @@ export const setAutoRenew = createAsyncThunk<
 export const upgradeSubscription = createAsyncThunk<
   BillingPageData,
   { tier: PlanTier; billingCycle?: BillingCycle; effectiveFrom?: 'immediately' | 'next_billing_period' },
-  { rejectValue: BillingActionReject }
+  { rejectValue: string }
 >('account/upgradeSubscription', async (payload, { dispatch, rejectWithValue }) => {
   try {
     const response = await apiClient.patch('/billing/subscription', payload);
-    const responseData = assertBillingApiSuccess(response.data);
     const refreshed = await dispatch(fetchBillingPageData()).unwrap();
+    const code = extractApiCode(response.data);
 
-    return withBillingApiMeta(refreshed, responseData);
+    return code ? { ...refreshed, code } : refreshed;
   } catch (error) {
-    const errorPayload = getBillingErrorPayload(error);
-    const code = extractBillingCode(errorPayload);
+    const code = getApiErrorCode(error);
 
     if (code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED') {
       const refreshed = await dispatch(fetchBillingPageData()).unwrap();
-      return withBillingApiMeta(refreshed, errorPayload);
+      return { ...refreshed, code };
     }
 
-    return rejectWithValue(createBillingActionReject(error));
+    return rejectWithValue(getApiErrorMessage(error, 'Failed to change subscription.'));
   }
 });
 
@@ -765,7 +706,7 @@ const accountSlice = createSlice({
       })
       .addCase(subscribeToPlan.rejected, (state, action) => {
         state.billing.savingPlan = null;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to update subscription.';
       })
       .addCase(cancelPlanSubscription.pending, (state) => {
         state.billing.cancelLoading = true;
@@ -779,7 +720,7 @@ const accountSlice = createSlice({
       })
       .addCase(cancelPlanSubscription.rejected, (state, action) => {
         state.billing.cancelLoading = false;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to cancel subscription.';
       })
       .addCase(pauseSubscription.pending, (state) => {
         state.billing.pauseLoading = true;
@@ -793,7 +734,7 @@ const accountSlice = createSlice({
       })
       .addCase(pauseSubscription.rejected, (state, action) => {
         state.billing.pauseLoading = false;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to pause subscription.';
       })
       .addCase(resumeSubscription.pending, (state) => {
         state.billing.resumeLoading = true;
@@ -807,7 +748,7 @@ const accountSlice = createSlice({
       })
       .addCase(resumeSubscription.rejected, (state, action) => {
         state.billing.resumeLoading = false;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to resume subscription.';
       })
       .addCase(resumeAutoRenew.pending, (state) => {
         state.billing.resumeAutoRenewLoading = true;
@@ -821,7 +762,7 @@ const accountSlice = createSlice({
       })
       .addCase(resumeAutoRenew.rejected, (state, action) => {
         state.billing.resumeAutoRenewLoading = false;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to resume auto-renew.';
       })
       .addCase(setAutoRenew.pending, (state) => {
         state.billing.autoRenewLoading = true;
@@ -835,7 +776,7 @@ const accountSlice = createSlice({
       })
       .addCase(setAutoRenew.rejected, (state, action) => {
         state.billing.autoRenewLoading = false;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to update auto-renew.';
       })
       .addCase(upgradeSubscription.pending, (state, action) => {
         state.billing.upgradeLoading = action.meta.arg.tier;
@@ -849,7 +790,7 @@ const accountSlice = createSlice({
       })
       .addCase(upgradeSubscription.rejected, (state, action) => {
         state.billing.upgradeLoading = null;
-        state.billing.error = getBillingActionErrorMessage(action.payload);
+        state.billing.error = action.payload ?? 'Failed to change subscription.';
       })
       .addCase(fetchReferralStatus.pending, (state) => {
         state.referral.loading = true;
