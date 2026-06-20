@@ -6,6 +6,8 @@ import {
   assertBillingApiSuccess,
   extractBillingApiMeta,
   extractBillingCode,
+  extractBillingMessage,
+  extractBillingWarnings,
   getBillingApiErrorMessage,
   getBillingErrorPayload,
   type BillingApiWarning,
@@ -110,15 +112,21 @@ type BillingPageData = {
   plans: BillingPlan[];
   snapshot: BillingSnapshot | null;
   countryCode: string;
+  messages?: string[];
   message?: string;
   code?: string;
   warnings?: BillingApiWarning[];
+};
+
+type FetchBillingPageDataOptions = {
+  includeMessages?: boolean;
 };
 
 type BillingActionReject = {
   message: string;
   code?: string;
   warnings?: BillingApiWarning[];
+  billingMessageFromPayload?: boolean;
 };
 
 export interface ReferralStatus {
@@ -212,6 +220,7 @@ const createBillingActionReject = (error: unknown): BillingActionReject => {
   return {
     ...meta,
     message: getBillingApiErrorMessage(error),
+    billingMessageFromPayload: Boolean(meta.message),
   };
 };
 
@@ -237,9 +246,9 @@ export const fetchSubscriptionSnapshot = createAsyncThunk<BillingSnapshot, void,
 
 export const fetchBillingPageData = createAsyncThunk<
   BillingPageData,
-  void,
+  FetchBillingPageDataOptions | void,
   { rejectValue: string }
->('account/fetchBillingPageData', async (_, { rejectWithValue }) => {
+>('account/fetchBillingPageData', async (options, { rejectWithValue }) => {
   try {
     const countryCodePromise: Promise<string> = (async () => {
       try {
@@ -259,11 +268,22 @@ export const fetchBillingPageData = createAsyncThunk<
 
     const plansData = assertBillingApiSuccess(plansResponse.data);
     const snapshotData = assertBillingApiSuccess(snapshotResponse.data);
+    const includeMessages = Boolean(options?.includeMessages);
+    const messages = includeMessages
+      ? [extractBillingMessage(plansData), extractBillingMessage(snapshotData)].filter((message): message is string =>
+          Boolean(message),
+        )
+      : [];
+    const warnings = includeMessages
+      ? [...extractBillingWarnings(plansData), ...extractBillingWarnings(snapshotData)]
+      : [];
 
     return {
       plans: Array.isArray(plansData?.plans) ? plansData.plans : [],
       snapshot: (snapshotData ?? null) as BillingSnapshot | null,
       countryCode,
+      ...(messages.length ? { messages } : {}),
+      ...(warnings.length ? { warnings } : {}),
     };
   } catch (error) {
     return rejectWithValue(getBillingApiErrorMessage(error));

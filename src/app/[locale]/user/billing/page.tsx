@@ -61,6 +61,11 @@ interface BillingErrorModal {
   message: string;
 }
 
+type BillingPopupMessage = {
+  type: 'success' | 'error' | 'info' | 'warning';
+  text: string;
+};
+
 interface NormalizedScheduledPlan {
   tier: PlanTier | null;
   name: string;
@@ -81,15 +86,8 @@ const isPlanTier = (value: unknown): value is PlanTier =>
 
 const getPaymentErrorMessage = (error: unknown) => getBillingApiErrorMessage(error);
 
-type DisplayedBillingContractIssue = Error & {
-  billingContractIssueShown?: true;
-};
-
-const createDisplayedBillingContractIssue = (): DisplayedBillingContractIssue =>
-  Object.assign(new Error(BILLING_API_MESSAGE_MISSING), { billingContractIssueShown: true as const });
-
-const isDisplayedBillingContractIssue = (error: unknown): error is DisplayedBillingContractIssue =>
-  error instanceof Error && (error as DisplayedBillingContractIssue).billingContractIssueShown === true;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
 const getPaddleEventTransactionId = (event: PaddleEventData) => {
   const data = (event as { data?: Record<string, unknown> }).data;
@@ -117,7 +115,7 @@ export default function BillingPage() {
   const [trialWarning, setTrialWarning] = useState<PendingTrialCheckout | null>(null);
   const [activeSubscriptionConflict, setActiveSubscriptionConflict] = useState<ActiveSubscriptionConflict | null>(null);
   const [billingErrorModal, setBillingErrorModal] = useState<BillingErrorModal | null>(null);
-  const [popupMessage, setPopupMessage] = useState<{ type: 'success' | 'error' | 'info' | 'warning'; text: string } | null>(null);
+  const [popupMessage, setPopupMessage] = useState<BillingPopupMessage | null>(null);
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<BillingHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -127,6 +125,7 @@ export default function BillingPage() {
   const paddlePromiseRef = useRef<Promise<Paddle> | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const popupQueueRef = useRef<BillingPopupMessage[]>([]);
   const activeCheckoutTransactionIdRef = useRef<string | null>(null);
 
   const isKoreanLocale = locale === 'kr';
@@ -163,32 +162,67 @@ export default function BillingPage() {
     [t],
   );
 
-  const showPopup = useCallback((type: 'success' | 'error' | 'info' | 'warning', text: string) => {
-    setPopupMessage({ type, text });
+  const flushPopupQueue = useCallback(() => {
+    if (popupTimerRef.current) return;
 
-    if (popupTimerRef.current) {
-      clearTimeout(popupTimerRef.current);
-    }
+    const nextPopup = popupQueueRef.current.shift();
+    if (!nextPopup) return;
 
+    setPopupMessage(nextPopup);
     popupTimerRef.current = setTimeout(() => {
       setPopupMessage(null);
       popupTimerRef.current = null;
+      flushPopupQueue();
     }, 3500);
   }, []);
 
-  const getRequiredBillingMessage = useCallback(
-    (source: unknown) => {
-      const message = extractBillingMessage(source);
+  const showPopup = useCallback(
+    (type: 'success' | 'error' | 'info' | 'warning', text: string) => {
+      const normalizedText = text.trim();
+      if (!normalizedText) return;
 
-      if (!message) {
-        showPopup('error', BILLING_API_MESSAGE_MISSING);
-        return null;
-      }
-
-      return message;
+      popupQueueRef.current.push({ type, text: normalizedText });
+      flushPopupQueue();
     },
-    [showPopup],
+    [flushPopupQueue],
   );
+
+  const getBillingDisplayMessages = useCallback((source: unknown) => {
+    const messages: string[] = [];
+
+    if (isRecord(source) && Array.isArray(source.messages)) {
+      source.messages.forEach((item) => {
+        if (typeof item === 'string' && item.trim()) {
+          messages.push(item.trim());
+        }
+      });
+    }
+
+    const message = extractBillingMessage(source);
+    if (message) {
+      messages.push(message);
+    }
+
+    return Array.from(new Set(messages));
+  }, []);
+
+  const getRequiredBillingMessage = useCallback(
+    (source: unknown) => extractBillingMessage(source),
+    [],
+  );
+
+  const getPayloadPopupMessage = useCallback((source: unknown) => {
+    if (source instanceof Error) return null;
+
+    if (isRecord(source)) {
+      if (source.billingMessageFromPayload === false) return null;
+      if (source.billingMessageFromPayload === true) {
+        return extractBillingMessage(source.message);
+      }
+    }
+
+    return extractBillingMessage(source);
+  }, []);
 
   const showBillingResult = useCallback(
     (
@@ -196,34 +230,35 @@ export default function BillingPage() {
       type: 'success' | 'info' | 'warning' = 'success',
       excludedWarningCodes: string[] = [],
     ) => {
-      const message = extractBillingMessage(source);
+      const messages = getBillingDisplayMessages(source);
       const warningText = extractBillingWarnings(source)
         .filter((warning) => !excludedWarningCodes.includes(warning.code))
         .map((warning) => warning.message)
         .join('\n');
+      const text = [...messages, warningText].filter(Boolean).join('\n');
 
-      if (!message) {
-        showPopup('error', BILLING_API_MESSAGE_MISSING);
+      if (!text) {
         return false;
       }
-
-      const text = [message, warningText].filter(Boolean).join('\n');
 
       showPopup(warningText ? 'warning' : type, text);
       return true;
     },
-    [showPopup],
+    [getBillingDisplayMessages, showPopup],
   );
 
   const showBillingFailure = useCallback(
     (error: unknown, options?: { setCheckoutError?: boolean }) => {
       const payload = getBillingErrorPayload(error);
+      const payloadMessage = getPayloadPopupMessage(payload);
       const message = getPaymentErrorMessage(error);
 
-      if (extractBillingCode(payload) === 'PADDLE_SUBSCRIPTION_NOT_FOUND') {
-        setBillingErrorModal({ message });
-      } else {
-        showPopup('error', message);
+      if (payloadMessage) {
+        if (extractBillingCode(payload) === 'PADDLE_SUBSCRIPTION_NOT_FOUND') {
+          setBillingErrorModal({ message: payloadMessage });
+        } else {
+          showPopup('error', payloadMessage);
+        }
       }
 
       if (options?.setCheckoutError) {
@@ -232,7 +267,7 @@ export default function BillingPage() {
 
       return message;
     },
-    [showPopup],
+    [getPayloadPopupMessage, showPopup],
   );
 
   const runBillingAction = useCallback(
@@ -248,18 +283,12 @@ export default function BillingPage() {
         const payload = assertBillingApiSuccess(response.data) as BillingApiResponse<T>;
 
         if (!options.silentSuccess) {
-          const messageShown = showBillingResult(payload, options.successType ?? 'success');
-
-          if (!messageShown) {
-            throw createDisplayedBillingContractIssue();
-          }
+          showBillingResult(payload, options.successType ?? 'success');
         }
 
         return payload;
       } catch (error) {
-        if (!isDisplayedBillingContractIssue(error)) {
-          showBillingFailure(error);
-        }
+        showBillingFailure(error);
         throw error;
       }
     },
@@ -267,8 +296,23 @@ export default function BillingPage() {
   );
 
   useEffect(() => {
-    dispatch(fetchBillingPageData());
-  }, [dispatch]);
+    let active = true;
+
+    dispatch(fetchBillingPageData({ includeMessages: true }))
+      .unwrap()
+      .then((result) => {
+        if (active) {
+          showBillingResult(result, 'success');
+        }
+      })
+      .catch(() => {
+        return;
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [dispatch, showBillingResult]);
 
   useEffect(() => {
     let active = true;
@@ -282,6 +326,7 @@ export default function BillingPage() {
         const payload = assertBillingApiSuccess(response.data);
         if (!active) return;
         setHistoryItems(Array.isArray(payload?.items) ? payload.items : []);
+        showBillingResult(payload, 'success');
       } catch (err) {
         if (!active) return;
         setHistoryError(getPaymentErrorMessage(err));
@@ -295,7 +340,7 @@ export default function BillingPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [showBillingResult]);
 
   const brief = snapshot?.brief ?? null;
   const currentSubscription = snapshot?.subscription ?? null;
@@ -480,11 +525,7 @@ export default function BillingPage() {
     return isKoreanLocale ? `${getPlanName(planTier)} 구독` : `Subscribe to ${getPlanName(planTier)}`;
   };
 
-  const schedulePlanChange = async (
-    tier: PlanTier,
-    billingCycle: BillingCycle,
-    options?: { cancelScheduledChange?: boolean; fromCheckoutConflict?: boolean },
-  ) => {
+  const schedulePlanChange = async (tier: PlanTier, billingCycle: BillingCycle) => {
     setCheckoutError(null);
 
     try {
@@ -496,13 +537,7 @@ export default function BillingPage() {
         }),
       ).unwrap();
 
-      const type = result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED'
-        ? 'warning'
-        : options?.fromCheckoutConflict
-          ? 'info'
-          : 'success';
-
-      showBillingResult(result, type);
+      showBillingResult(result, 'success');
     } catch (err) {
       showBillingFailure(err);
     } finally {
@@ -654,11 +689,7 @@ export default function BillingPage() {
       return;
     }
 
-    const trialCancellationWarning =
-      extractTrialCancellationWarning(checkout) ??
-      (code === 'TRIAL_WILL_BE_CANCELLED'
-        ? { code: 'TRIAL_WILL_BE_CANCELLED', message: getRequiredBillingMessage(checkout) ?? '' }
-        : null);
+    const trialCancellationWarning = extractTrialCancellationWarning(checkout);
 
     if (trialCancellationWarning && !bypassTrialWarning) {
       if (!trialCancellationWarning.message) {
@@ -719,11 +750,7 @@ export default function BillingPage() {
         return;
       }
 
-      const trialCancellationWarning =
-        extractTrialCancellationWarning(responseData) ??
-        (code === 'TRIAL_WILL_BE_CANCELLED'
-          ? { code: 'TRIAL_WILL_BE_CANCELLED', message: getRequiredBillingMessage(responseData) ?? '' }
-          : null);
+      const trialCancellationWarning = extractTrialCancellationWarning(responseData);
 
       if (trialCancellationWarning && !options?.bypassTrialWarning) {
         if (!trialCancellationWarning.message) {
@@ -775,7 +802,7 @@ export default function BillingPage() {
       const cancelScheduledChange = Boolean(hasScheduledPlan && currentTier && tier === currentTier);
       const targetTier = cancelScheduledChange && currentTier ? currentTier : tier;
       const targetCycle = cancelScheduledChange ? currentBillingCycle : cycle;
-      await schedulePlanChange(targetTier, targetCycle, { cancelScheduledChange });
+      await schedulePlanChange(targetTier, targetCycle);
       return;
     }
 
@@ -803,7 +830,7 @@ export default function BillingPage() {
       if (updateUrl) {
         window.location.href = updateUrl;
       } else {
-        showPopup('error', 'Billing API did not return a payment method URL.');
+        setCheckoutError('Billing API did not return a payment method URL.');
       }
     } catch {
       // Error popup/modal is handled by runBillingAction.
@@ -824,7 +851,7 @@ export default function BillingPage() {
       if (portalUrl) {
         window.open(portalUrl, '_blank', 'noopener,noreferrer');
       } else {
-        showPopup('error', 'Billing API did not return a portal URL.');
+        setCheckoutError('Billing API did not return a portal URL.');
       }
     } catch {
       // Error popup/modal is handled by runBillingAction.
@@ -936,7 +963,7 @@ export default function BillingPage() {
                   const pending = activeSubscriptionConflict;
                   setActiveSubscriptionConflict(null);
                   setCheckoutPlan(pending.tier);
-                  void schedulePlanChange(pending.tier, pending.billingCycle, { fromCheckoutConflict: true });
+                  void schedulePlanChange(pending.tier, pending.billingCycle);
                 }}
                 className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
               >
