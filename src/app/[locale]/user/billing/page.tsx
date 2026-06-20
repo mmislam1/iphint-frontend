@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Check, Crown } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import {
+  BILLING_API_MESSAGE_MISSING,
   assertBillingApiSuccess,
   extractBillingCode,
   extractBillingMessage,
@@ -47,7 +48,7 @@ interface PendingTrialCheckout {
   billingCycle: BillingCycle;
   withTrial: boolean;
   checkout: CheckoutResponse | null;
-  message?: string;
+  message: string;
 }
 
 interface ActiveSubscriptionConflict {
@@ -78,7 +79,17 @@ const paddleClientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.trim().re
 const isPlanTier = (value: unknown): value is PlanTier =>
   typeof value === 'string' && planTiers.includes(value as PlanTier);
 
-const getPaymentErrorMessage = (error: unknown, fallback: string) => getBillingApiErrorMessage(error, fallback);
+const getPaymentErrorMessage = (error: unknown) => getBillingApiErrorMessage(error);
+
+type DisplayedBillingContractIssue = Error & {
+  billingContractIssueShown?: true;
+};
+
+const createDisplayedBillingContractIssue = (): DisplayedBillingContractIssue =>
+  Object.assign(new Error(BILLING_API_MESSAGE_MISSING), { billingContractIssueShown: true as const });
+
+const isDisplayedBillingContractIssue = (error: unknown): error is DisplayedBillingContractIssue =>
+  error instanceof Error && (error as DisplayedBillingContractIssue).billingContractIssueShown === true;
 
 const getPaddleEventTransactionId = (event: PaddleEventData) => {
   const data = (event as { data?: Record<string, unknown> }).data;
@@ -165,31 +176,49 @@ export default function BillingPage() {
     }, 3500);
   }, []);
 
+  const getRequiredBillingMessage = useCallback(
+    (source: unknown) => {
+      const message = extractBillingMessage(source);
+
+      if (!message) {
+        showPopup('error', BILLING_API_MESSAGE_MISSING);
+        return null;
+      }
+
+      return message;
+    },
+    [showPopup],
+  );
+
   const showBillingResult = useCallback(
     (
       source: unknown,
       type: 'success' | 'info' | 'warning' = 'success',
-      fallback?: string,
       excludedWarningCodes: string[] = [],
     ) => {
-      const message = extractBillingMessage(source) ?? fallback;
+      const message = extractBillingMessage(source);
       const warningText = extractBillingWarnings(source)
         .filter((warning) => !excludedWarningCodes.includes(warning.code))
         .map((warning) => warning.message)
         .join('\n');
+
+      if (!message) {
+        showPopup('error', BILLING_API_MESSAGE_MISSING);
+        return false;
+      }
+
       const text = [message, warningText].filter(Boolean).join('\n');
 
-      if (text) {
-        showPopup(warningText ? 'warning' : type, text);
-      }
+      showPopup(warningText ? 'warning' : type, text);
+      return true;
     },
     [showPopup],
   );
 
   const showBillingFailure = useCallback(
-    (error: unknown, fallback: string, options?: { setCheckoutError?: boolean }) => {
+    (error: unknown, options?: { setCheckoutError?: boolean }) => {
       const payload = getBillingErrorPayload(error);
-      const message = getPaymentErrorMessage(error, fallback);
+      const message = getPaymentErrorMessage(error);
 
       if (extractBillingCode(payload) === 'PADDLE_SUBSCRIPTION_NOT_FOUND') {
         setBillingErrorModal({ message });
@@ -210,7 +239,6 @@ export default function BillingPage() {
     async <T,>(
       action: () => Promise<{ data: BillingApiResponse<T> }>,
       options: {
-        fallbackErrorMessage?: string;
         silentSuccess?: boolean;
         successType?: 'success' | 'info' | 'warning';
       } = {},
@@ -220,12 +248,18 @@ export default function BillingPage() {
         const payload = assertBillingApiSuccess(response.data) as BillingApiResponse<T>;
 
         if (!options.silentSuccess) {
-          showBillingResult(payload, options.successType ?? 'success');
+          const messageShown = showBillingResult(payload, options.successType ?? 'success');
+
+          if (!messageShown) {
+            throw createDisplayedBillingContractIssue();
+          }
         }
 
         return payload;
       } catch (error) {
-        showBillingFailure(error, options.fallbackErrorMessage ?? 'Billing action failed.');
+        if (!isDisplayedBillingContractIssue(error)) {
+          showBillingFailure(error);
+        }
         throw error;
       }
     },
@@ -250,7 +284,7 @@ export default function BillingPage() {
         setHistoryItems(Array.isArray(payload?.items) ? payload.items : []);
       } catch (err) {
         if (!active) return;
-        setHistoryError(getPaymentErrorMessage(err, 'Could not load billing history.'));
+        setHistoryError(getPaymentErrorMessage(err));
       } finally {
         if (active) setHistoryLoading(false);
       }
@@ -462,22 +496,15 @@ export default function BillingPage() {
         }),
       ).unwrap();
 
-      const fallback = result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED'
-        ? t('autoRenewScheduleCancelled')
-        : options?.cancelScheduledChange
-          ? t('scheduledPlanCancelled')
-          : options?.fromCheckoutConflict
-            ? t('activeSubscriptionChangeStarted')
-            : t('planChangeScheduled');
       const type = result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED'
         ? 'warning'
         : options?.fromCheckoutConflict
           ? 'info'
           : 'success';
 
-      showBillingResult(result, type, fallback);
+      showBillingResult(result, type);
     } catch (err) {
-      showBillingFailure(err, 'Unable to change your plan right now.');
+      showBillingFailure(err);
     } finally {
       setCheckoutPlan(null);
     }
@@ -495,7 +522,6 @@ export default function BillingPage() {
           try {
             await runBillingAction(
               () => apiClient.post('/billing/sync', transactionId ? { transactionId } : {}),
-              { fallbackErrorMessage: 'Unable to sync billing details after checkout.' },
             );
           } catch {
             // Webhooks and polling below still provide eventual consistency.
@@ -529,7 +555,7 @@ export default function BillingPage() {
       if (event.name === 'checkout.error' || event.name === 'checkout.failed') {
         activeCheckoutTransactionIdRef.current = null;
         setCheckoutPlan(null);
-        setCheckoutError(t('checkoutError'));
+        setCheckoutError(BILLING_API_MESSAGE_MISSING);
         return;
       }
 
@@ -538,7 +564,7 @@ export default function BillingPage() {
         setCheckoutPlan(null);
       }
     },
-    [dispatch, runBillingAction, t],
+    [dispatch, runBillingAction],
   );
 
   const ensurePaddle = async () => {
@@ -572,15 +598,16 @@ export default function BillingPage() {
     return paddlePromiseRef.current;
   };
 
-  const launchCheckout = async (checkout: CheckoutResponse, tier: PlanTier) => {
+  const launchCheckout = async (checkout: CheckoutResponse) => {
     const transactionId = checkout.transactionId;
     const checkoutUrl = checkout.checkoutUrl ?? checkout.url;
-    const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
-    const fallbackMessage = t('checkoutOpened', { plan: planName });
 
     if (transactionId) {
       const paddle = await ensurePaddle();
-      showBillingResult(checkout, 'success', fallbackMessage, ['TRIAL_WILL_BE_CANCELLED']);
+      if (!showBillingResult(checkout, 'success', ['TRIAL_WILL_BE_CANCELLED'])) {
+        setCheckoutPlan(null);
+        return;
+      }
       activeCheckoutTransactionIdRef.current = transactionId;
       paddle.Checkout.open({
         transactionId,
@@ -591,7 +618,10 @@ export default function BillingPage() {
         },
       } as unknown as CheckoutOpenOptions);
     } else if (checkoutUrl) {
-      showBillingResult(checkout, 'success', fallbackMessage, ['TRIAL_WILL_BE_CANCELLED']);
+      if (!showBillingResult(checkout, 'success', ['TRIAL_WILL_BE_CANCELLED'])) {
+        setCheckoutPlan(null);
+        return;
+      }
       if (typeof window !== 'undefined') {
         window.location.assign(checkoutUrl);
       }
@@ -609,10 +639,16 @@ export default function BillingPage() {
     const code = extractBillingCode(checkout);
 
     if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
+      const message = getRequiredBillingMessage(checkout);
+      if (!message) {
+        setCheckoutPlan(null);
+        return;
+      }
+
       setActiveSubscriptionConflict({
         tier,
         billingCycle,
-        message: extractBillingMessage(checkout) ?? t('activeSubscriptionConflictBody'),
+        message,
       });
       setCheckoutPlan(null);
       return;
@@ -621,10 +657,15 @@ export default function BillingPage() {
     const trialCancellationWarning =
       extractTrialCancellationWarning(checkout) ??
       (code === 'TRIAL_WILL_BE_CANCELLED'
-        ? { code: 'TRIAL_WILL_BE_CANCELLED', message: extractBillingMessage(checkout) ?? t('trialWarningBody') }
+        ? { code: 'TRIAL_WILL_BE_CANCELLED', message: getRequiredBillingMessage(checkout) ?? '' }
         : null);
 
     if (trialCancellationWarning && !bypassTrialWarning) {
+      if (!trialCancellationWarning.message) {
+        setCheckoutPlan(null);
+        return;
+      }
+
       setTrialWarning({
         tier,
         billingCycle,
@@ -636,7 +677,7 @@ export default function BillingPage() {
       return;
     }
 
-    await launchCheckout(checkout, tier);
+    await launchCheckout(checkout);
   };
 
   const beginCheckout = async (
@@ -663,10 +704,16 @@ export default function BillingPage() {
       const code = extractBillingCode(responseData);
 
       if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
+        const message = getRequiredBillingMessage(responseData);
+        if (!message) {
+          setCheckoutPlan(null);
+          return;
+        }
+
         setActiveSubscriptionConflict({
           tier,
           billingCycle: targetCycle,
-          message: extractBillingMessage(responseData) ?? t('activeSubscriptionConflictBody'),
+          message,
         });
         setCheckoutPlan(null);
         return;
@@ -675,10 +722,15 @@ export default function BillingPage() {
       const trialCancellationWarning =
         extractTrialCancellationWarning(responseData) ??
         (code === 'TRIAL_WILL_BE_CANCELLED'
-          ? { code: 'TRIAL_WILL_BE_CANCELLED', message: extractBillingMessage(responseData) ?? t('trialWarningBody') }
+          ? { code: 'TRIAL_WILL_BE_CANCELLED', message: getRequiredBillingMessage(responseData) ?? '' }
           : null);
 
       if (trialCancellationWarning && !options?.bypassTrialWarning) {
+        if (!trialCancellationWarning.message) {
+          setCheckoutPlan(null);
+          return;
+        }
+
         setTrialWarning({
           tier,
           billingCycle: targetCycle,
@@ -691,7 +743,7 @@ export default function BillingPage() {
       }
 
       setCheckoutPlan(null);
-      showBillingFailure(paymentError, 'Unable to start Paddle checkout.', { setCheckoutError: true });
+      showBillingFailure(paymentError, { setCheckoutError: true });
     }
   };
 
@@ -704,7 +756,7 @@ export default function BillingPage() {
 
     try {
       if (pending.checkout?.transactionId || pending.checkout?.checkoutUrl || pending.checkout?.url) {
-        await launchCheckout(pending.checkout, pending.tier);
+        await launchCheckout(pending.checkout);
       } else {
         await beginCheckout(pending.tier, {
           billingCycle: pending.billingCycle,
@@ -714,7 +766,7 @@ export default function BillingPage() {
       }
     } catch (err) {
       setCheckoutPlan(null);
-      showBillingFailure(err, 'Unable to start Paddle checkout.', { setCheckoutError: true });
+      showBillingFailure(err, { setCheckoutError: true });
     }
   };
 
@@ -733,9 +785,9 @@ export default function BillingPage() {
   const handleAutoRenewToggle = async (enabled: boolean) => {
     try {
       const result = await dispatch(setAutoRenew({ enabled })).unwrap();
-      showBillingResult(result, 'success', enabled ? t('autoRenewResumed') : t('autoRenewDisabled'));
+      showBillingResult(result, 'success');
     } catch (err) {
-      showBillingFailure(err, 'Unable to update auto-renew.');
+      showBillingFailure(err);
     }
   };
 
@@ -745,7 +797,6 @@ export default function BillingPage() {
     try {
       const response = await runBillingAction<{ updateUrl?: string; portalUrl?: string }>(
         () => apiClient.get('/billing/payment-method'),
-        { fallbackErrorMessage: 'Unable to open payment method update.' },
       );
       const updateUrl = response.updateUrl ?? response.portalUrl;
 
@@ -767,7 +818,6 @@ export default function BillingPage() {
     try {
       const response = await runBillingAction<{ portalUrl?: string }>(
         () => apiClient.get('/billing/portal'),
-        { fallbackErrorMessage: 'Unable to open the billing portal.' },
       );
       const portalUrl = response.portalUrl;
 
@@ -840,7 +890,7 @@ export default function BillingPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="text-lg font-semibold text-gray-950">{t('trialWarningTitle')}</h2>
-            <p className="mt-2 text-sm leading-6 text-gray-600">{trialWarning.message || t('trialWarningBody')}</p>
+            <p className="mt-2 text-sm leading-6 text-gray-600">{trialWarning.message}</p>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"

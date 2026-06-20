@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 export const BILLING_SERVICE_UNREACHABLE_MESSAGE = 'Unable to reach billing service. Please try again.';
+export const BILLING_API_MESSAGE_MISSING = 'Billing API response did not include a user-facing message.';
 
 export type BillingApiWarning = {
   code: string;
@@ -161,7 +162,7 @@ export const getBillingErrorPayload = (error: unknown): unknown => {
   return error;
 };
 
-export const getBillingApiErrorMessage = (error: unknown, fallback = 'Billing action failed.') => {
+export const getBillingApiErrorMessage = (error: unknown) => {
   const payload = getBillingErrorPayload(error);
   const payloadMessage = extractBillingMessage(payload);
 
@@ -174,14 +175,13 @@ export const getBillingApiErrorMessage = (error: unknown, fallback = 'Billing ac
       return BILLING_SERVICE_UNREACHABLE_MESSAGE;
     }
 
-    const errorMessage = error.message.trim();
-    return errorMessage ? errorMessage : fallback;
+    return BILLING_API_MESSAGE_MISSING;
   }
 
   if (error instanceof Error) {
     const errorMessage = error.message.trim();
-    return errorMessage ? errorMessage : fallback;
+    return errorMessage ? errorMessage : BILLING_API_MESSAGE_MISSING;
   }
 
-  return fallback;
+  return BILLING_API_MESSAGE_MISSING;
 };
