@@ -302,21 +302,6 @@ export default function BillingPage() {
   const visibleScheduledPlan = isAutoRenewOff ? null : scheduledPlan;
   const hasScheduledPlan = !!visibleScheduledPlan;
 
-  const currentResourceLimits = useMemo(() => {
-    const limits = briefCurrentPlan?.resourceLimits ?? briefCurrentPlan?.limits ?? null;
-    const imageUploadLimit = Number(
-      limits?.imageUploadLimit ?? currentPlanFromCatalog?.imageUploadLimit ?? snapshot?.usage?.imageUploadLimit ?? 0,
-    );
-    const alertLimit = Number(limits?.alertLimit ?? currentPlanFromCatalog?.alertLimit ?? snapshot?.usage?.alertLimit ?? 0);
-    const pdfEnabled = Boolean(limits?.pdfEnabled ?? currentPlanFromCatalog?.pdfEnabled ?? snapshot?.usage?.pdfEnabled ?? false);
-
-    return {
-      imageUploadLimit: Number.isFinite(imageUploadLimit) ? imageUploadLimit : 0,
-      alertLimit: Number.isFinite(alertLimit) ? alertLimit : 0,
-      pdfEnabled,
-    };
-  }, [briefCurrentPlan?.limits, briefCurrentPlan?.resourceLimits, currentPlanFromCatalog, snapshot?.usage]);
-
   const currentPlanPrice = useMemo(() => {
     if (briefCurrentPlan?.priceFormatted) return briefCurrentPlan.priceFormatted;
     if (typeof briefCurrentPlan?.price === 'string' && briefCurrentPlan.price.trim()) return briefCurrentPlan.price;
@@ -328,19 +313,18 @@ export default function BillingPage() {
 
   const searchUsage = useMemo(() => {
     if (!snapshot) {
-      return { used: 0, limit: 0, remaining: 0, unlimited: false };
+      return { used: 0, limit: 0 };
     }
 
     const used = Number(snapshot.usage.imagesUsedThisMonth || 0);
     const limit = Number(snapshot.usage.imageUploadLimit || 0);
-    if (limit <= 0) {
-      return { used, limit, remaining: -1, unlimited: true };
-    }
-
-    const safeUsed = Math.max(0, used);
-    const remaining = Math.max(0, limit - safeUsed);
-    return { used: safeUsed, limit, remaining, unlimited: false };
+    return {
+      used: Number.isFinite(used) ? Math.max(0, used) : 0,
+      limit: Number.isFinite(limit) ? Math.max(0, limit) : 0,
+    };
   }, [snapshot]);
+  const creditUsagePercent =
+    searchUsage.limit > 0 ? Math.min(100, Math.max(0, Math.round((searchUsage.used / searchUsage.limit) * 100))) : 0;
 
   const tierOrder: PlanTier[] = ['starter', 'pro', 'premium'];
   const currentTierIndex = currentTier ? tierOrder.indexOf(currentTier) : -1;
@@ -380,11 +364,6 @@ export default function BillingPage() {
   };
 
   const getPlanName = (planTier: PlanTier) => plans.find((plan) => plan.tier === planTier)?.name || planTier;
-
-  const formatLimitCount = (value: number | null | undefined) => {
-    if (value == null) return '--';
-    return value <= 0 ? t('unlimited') : numberFormatter.format(value);
-  };
 
   const getPlanCtaLabel = (planTier: PlanTier, isWorking: boolean, isPendingTargetPlan: boolean) => {
     if (isWorking) return isKoreanLocale ? '처리 중...' : 'Processing...';
@@ -861,11 +840,11 @@ export default function BillingPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 lg:flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-gray-900">{t('currentPlanLabel', { name: currentPlanName })}</p>
+              <p className="break-words text-base font-semibold text-gray-900">{t('currentPlanLabel', { name: currentPlanName })}</p>
               {isTrial && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                   <Crown className="h-3 w-3" />
@@ -876,82 +855,62 @@ export default function BillingPage() {
 
             {hasEffectivePlan ? (
               <p className="mt-1 text-xs text-gray-500">
-                {getCycleLabel(currentBillingCycle)} · {currentPlanPrice}
+                {getCycleLabel(currentBillingCycle)} / {currentPlanPrice}
               </p>
             ) : (
               <p className="mt-1 text-xs text-gray-500">{t('noActivePlan')}</p>
             )}
 
             {hasEffectivePlan && (
-              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <div className="rounded-lg bg-gray-50 px-3 py-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('imageUploads')}</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-900">{formatLimitCount(currentResourceLimits.imageUploadLimit)}</p>
+              <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+                <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('uploadsUsed')}</p>
+                  <p className="mt-1 text-xl font-semibold leading-none text-gray-900">{numberFormatter.format(searchUsage.used)}</p>
+                  {searchUsage.limit > 0 && (
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="h-full rounded-full bg-gray-900 transition-all"
+                        style={{ width: `${creditUsagePercent}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="rounded-lg bg-gray-50 px-3 py-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('alerts')}</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-900">{formatLimitCount(currentResourceLimits.alertLimit)}</p>
-                </div>
-                <div className="rounded-lg bg-gray-50 px-3 py-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('pdfReports')}</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-900">
-                    {currentResourceLimits.pdfEnabled ? t('included') : t('notIncluded')}
+
+                <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">
+                    {autoRenewEnabled
+                      ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
+                      : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) })}
                   </p>
                 </div>
-              </div>
-            )}
 
-            {hasEffectivePlan && snapshot && snapshot.usage.imageUploadLimit > 0 && (
-              <div className="mt-4 max-w-sm">
-                <div className="mb-1 flex justify-between text-[10px] text-gray-400">
-                  <span>{t('uploadsUsed')}</span>
-                  <span>
-                    {searchUsage.used} / {searchUsage.limit}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                  <div
-                    className="h-full rounded-full bg-gray-900 transition-all"
-                    style={{ width: `${Math.min(100, Math.max(0, Math.round((searchUsage.used / searchUsage.limit) * 100)))}%` }}
-                  />
+                <div className="min-w-0 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2.5 text-sky-900">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">{t('scheduledPlanTitle')}</p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {visibleScheduledPlan ? `${visibleScheduledPlan.name} / ${getCycleLabel(visibleScheduledPlan.billingCycle)}` : '--'}
+                  </p>
+                  {visibleScheduledPlan && (
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-sky-800">
+                      <span>{t('scheduledPlanChargeAt', { date: formatDate(visibleScheduledPlan.chargeAt) })}</span>
+                      <span>{t('scheduledPlanActivatesAt', { date: formatDate(visibleScheduledPlan.activatesAt) })}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {hasEffectivePlan && (
-              <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                <p className="font-semibold text-gray-900">
-                  {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
-                </p>
-                <p className="mt-1">
-                  {autoRenewEnabled
-                    ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
-                    : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) })}
-                </p>
-              </div>
-            )}
-
-            {visibleScheduledPlan && (
-              <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-                <p className="font-semibold text-sky-950">{t('scheduledPlanTitle')}</p>
-                <p className="mt-1">
-                  {visibleScheduledPlan.name} · {getCycleLabel(visibleScheduledPlan.billingCycle)}
-                </p>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                  <span>{t('scheduledPlanChargeAt', { date: formatDate(visibleScheduledPlan.chargeAt) })}</span>
-                  <span>{t('scheduledPlanActivatesAt', { date: formatDate(visibleScheduledPlan.activatesAt) })}</span>
-                </div>
-              </div>
-            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white p-1">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="grid w-full grid-cols-2 rounded-lg border border-gray-300 bg-white p-1 sm:inline-flex sm:w-auto sm:grid-cols-none">
               <button
                 type="button"
                 onClick={() => setCycle('monthly')}
                 className={[
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'rounded-md px-3 py-1.5 text-center text-xs font-medium transition-colors',
                   cycle === 'monthly' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
                 ].join(' ')}
               >
@@ -961,7 +920,7 @@ export default function BillingPage() {
                 type="button"
                 onClick={() => setCycle('annual')}
                 className={[
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'rounded-md px-3 py-1.5 text-center text-xs font-medium transition-colors',
                   cycle === 'annual' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
                 ].join(' ')}
               >
@@ -974,7 +933,7 @@ export default function BillingPage() {
                 type="button"
                 onClick={() => handleAutoRenewToggle(!autoRenewEnabled)}
                 disabled={autoRenewLoading}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 sm:w-auto"
               >
                 {autoRenewLoading
                   ? t('processing')
