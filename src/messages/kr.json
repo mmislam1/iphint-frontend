@@ -1345,6 +1345,13 @@
       "loadFailed": "설정을 불러오지 못했습니다"
     },
     "billing": {
+      "activeSubscriptionTitle": "활성 Paddle 구독이 있습니다",
+      "activeSubscriptionConflictBody": "이미 Paddle 구독이 있습니다. 새 결제를 시작하지 말고 요금제 변경 흐름을 이용해 주세요.",
+      "changePlanInstead": "요금제 변경하기",
+      "notNow": "나중에",
+      "subscriptionMissingTitle": "Paddle 구독을 찾을 수 없습니다",
+      "dismiss": "닫기",
+      "contactSupport": "지원팀 문의",
       "title": "결제",
       "description": "요금제를 관리하고 Paddle을 통해 안전하게 결제하세요. 유료 요금제는 여기서 취소할 때까지 자동으로 갱신됩니다.",
       "trialActive": "Pro 체험판이 활성 상태입니다.",

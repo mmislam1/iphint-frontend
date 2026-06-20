@@ -1401,6 +1401,13 @@
       "scheduledPlanCancelled": "Scheduled plan change has been canceled.",
       "autoRenewScheduleCancelled": "Auto-renew is off, so the scheduled plan change was cleared.",
       "activeSubscriptionChangeStarted": "An active subscription already exists. Your plan change was scheduled instead.",
+      "activeSubscriptionTitle": "Active Paddle subscription found",
+      "activeSubscriptionConflictBody": "You already have a Paddle subscription. Use the plan-change flow instead of starting a new checkout.",
+      "changePlanInstead": "Change plan instead",
+      "notNow": "Not now",
+      "subscriptionMissingTitle": "Paddle subscription not found",
+      "dismiss": "Dismiss",
+      "contactSupport": "Contact support",
       "checkoutError": "Paddle could not complete the payment. Please try again.",
       "paddleOverlayNotConfigured": "Paddle overlay checkout is not configured. If the backend returns a checkout URL, redirect checkout can still continue.",
       "paddleNotConfigured": "Paid plans on this screen use Paddle checkout. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN to enable paid subscriptions."

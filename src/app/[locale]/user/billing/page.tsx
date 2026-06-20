@@ -1,11 +1,20 @@
 'use client';
 
 import type { CheckoutOpenOptions, Paddle, PaddleEventData } from '@paddle/paddle-js';
-import axios from 'axios';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, Crown } from 'lucide-react';
-import { apiClient, getApiErrorMessage } from '@/lib/api';
+import { apiClient } from '@/lib/api';
+import {
+  assertBillingApiSuccess,
+  extractBillingCode,
+  extractBillingMessage,
+  extractBillingWarnings,
+  extractTrialCancellationWarning,
+  getBillingApiErrorMessage,
+  getBillingErrorPayload,
+  type BillingApiResponse,
+} from '@/lib/billingApi';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
@@ -27,19 +36,28 @@ interface BillingHistoryItem {
   createdAt: string;
 }
 
-interface CheckoutResponse {
-  code?: string;
-  message?: string;
+type CheckoutResponse = BillingApiResponse<{
   transactionId?: string;
   checkoutUrl?: string;
   url?: string;
-}
+}>;
 
 interface PendingTrialCheckout {
   tier: PlanTier;
   billingCycle: BillingCycle;
   withTrial: boolean;
   checkout: CheckoutResponse | null;
+  message?: string;
+}
+
+interface ActiveSubscriptionConflict {
+  tier: PlanTier;
+  billingCycle: BillingCycle;
+  message: string;
+}
+
+interface BillingErrorModal {
+  message: string;
 }
 
 interface NormalizedScheduledPlan {
@@ -60,33 +78,7 @@ const paddleClientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.trim().re
 const isPlanTier = (value: unknown): value is PlanTier =>
   typeof value === 'string' && planTiers.includes(value as PlanTier);
 
-const readResponseCode = (value: unknown): string | null => {
-  if (!value || typeof value !== 'object' || !('code' in value)) {
-    return null;
-  }
-
-  const code = (value as { code?: unknown }).code;
-  return typeof code === 'string' && code.trim() ? code.trim() : null;
-};
-
-const getAxiosResponseData = (error: unknown): unknown =>
-  axios.isAxiosError(error) ? error.response?.data : null;
-
-const getBillingErrorCode = (error: unknown) => readResponseCode(getAxiosResponseData(error));
-
-const getPaymentErrorMessage = (error: unknown, fallback: string) => {
-  if (typeof error === 'string') {
-    const trimmed = error.trim();
-    if (trimmed) return trimmed;
-  }
-
-  if (error instanceof Error) {
-    const trimmed = error.message.trim();
-    if (trimmed) return trimmed;
-  }
-
-  return getApiErrorMessage(error, fallback);
-};
+const getPaymentErrorMessage = (error: unknown, fallback: string) => getBillingApiErrorMessage(error, fallback);
 
 const getPaddleEventTransactionId = (event: PaddleEventData) => {
   const data = (event as { data?: Record<string, unknown> }).data;
@@ -112,7 +104,9 @@ export default function BillingPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanTier | null>(null);
   const [trialWarning, setTrialWarning] = useState<PendingTrialCheckout | null>(null);
-  const [popupMessage, setPopupMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [activeSubscriptionConflict, setActiveSubscriptionConflict] = useState<ActiveSubscriptionConflict | null>(null);
+  const [billingErrorModal, setBillingErrorModal] = useState<BillingErrorModal | null>(null);
+  const [popupMessage, setPopupMessage] = useState<{ type: 'success' | 'error' | 'info' | 'warning'; text: string } | null>(null);
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<BillingHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -158,7 +152,7 @@ export default function BillingPage() {
     [t],
   );
 
-  const showPopup = useCallback((type: 'success' | 'error' | 'info', text: string) => {
+  const showPopup = useCallback((type: 'success' | 'error' | 'info' | 'warning', text: string) => {
     setPopupMessage({ type, text });
 
     if (popupTimerRef.current) {
@@ -170,6 +164,73 @@ export default function BillingPage() {
       popupTimerRef.current = null;
     }, 3500);
   }, []);
+
+  const showBillingResult = useCallback(
+    (
+      source: unknown,
+      type: 'success' | 'info' | 'warning' = 'success',
+      fallback?: string,
+      excludedWarningCodes: string[] = [],
+    ) => {
+      const message = extractBillingMessage(source) ?? fallback;
+      const warningText = extractBillingWarnings(source)
+        .filter((warning) => !excludedWarningCodes.includes(warning.code))
+        .map((warning) => warning.message)
+        .join('\n');
+      const text = [message, warningText].filter(Boolean).join('\n');
+
+      if (text) {
+        showPopup(warningText ? 'warning' : type, text);
+      }
+    },
+    [showPopup],
+  );
+
+  const showBillingFailure = useCallback(
+    (error: unknown, fallback: string, options?: { setCheckoutError?: boolean }) => {
+      const payload = getBillingErrorPayload(error);
+      const message = getPaymentErrorMessage(error, fallback);
+
+      if (extractBillingCode(payload) === 'PADDLE_SUBSCRIPTION_NOT_FOUND') {
+        setBillingErrorModal({ message });
+      } else {
+        showPopup('error', message);
+      }
+
+      if (options?.setCheckoutError) {
+        setCheckoutError(message);
+      }
+
+      return message;
+    },
+    [showPopup],
+  );
+
+  const runBillingAction = useCallback(
+    async <T,>(
+      action: () => Promise<{ data: BillingApiResponse<T> }>,
+      options: {
+        fallbackErrorMessage?: string;
+        silentSuccess?: boolean;
+        successType?: 'success' | 'info' | 'warning';
+      } = {},
+    ) => {
+      try {
+        const response = await action();
+        const payload = assertBillingApiSuccess(response.data) as BillingApiResponse<T>;
+
+        if (!options.silentSuccess) {
+          showBillingResult(payload, options.successType ?? 'success');
+        }
+
+        return payload;
+      } catch (error) {
+        showBillingFailure(error, options.fallbackErrorMessage ?? 'Billing action failed.');
+        throw error;
+      }
+    },
+    [showBillingFailure, showBillingResult],
+  );
 
   useEffect(() => {
     dispatch(fetchBillingPageData());
@@ -184,8 +245,9 @@ export default function BillingPage() {
 
       try {
         const response = await apiClient.get('/billing/history', { params: { page: 1, limit: 20 } });
+        const payload = assertBillingApiSuccess(response.data);
         if (!active) return;
-        setHistoryItems(Array.isArray(response.data?.items) ? response.data.items : []);
+        setHistoryItems(Array.isArray(payload?.items) ? payload.items : []);
       } catch (err) {
         if (!active) return;
         setHistoryError(getPaymentErrorMessage(err, 'Could not load billing history.'));
@@ -400,17 +462,22 @@ export default function BillingPage() {
         }),
       ).unwrap();
 
-      if (result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED') {
-        showPopup('info', t('autoRenewScheduleCancelled'));
-      } else if (options?.cancelScheduledChange) {
-        showPopup('success', t('scheduledPlanCancelled'));
-      } else if (options?.fromCheckoutConflict) {
-        showPopup('info', t('activeSubscriptionChangeStarted'));
-      } else {
-        showPopup('success', t('planChangeScheduled'));
-      }
+      const fallback = result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED'
+        ? t('autoRenewScheduleCancelled')
+        : options?.cancelScheduledChange
+          ? t('scheduledPlanCancelled')
+          : options?.fromCheckoutConflict
+            ? t('activeSubscriptionChangeStarted')
+            : t('planChangeScheduled');
+      const type = result.code === 'AUTO_RENEW_OFF_SCHEDULE_CANCELLED'
+        ? 'warning'
+        : options?.fromCheckoutConflict
+          ? 'info'
+          : 'success';
+
+      showBillingResult(result, type, fallback);
     } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to change your plan right now.'));
+      showBillingFailure(err, 'Unable to change your plan right now.');
     } finally {
       setCheckoutPlan(null);
     }
@@ -426,7 +493,10 @@ export default function BillingPage() {
 
         void (async () => {
           try {
-            await apiClient.post('/billing/sync', transactionId ? { transactionId } : {});
+            await runBillingAction(
+              () => apiClient.post('/billing/sync', transactionId ? { transactionId } : {}),
+              { fallbackErrorMessage: 'Unable to sync billing details after checkout.' },
+            );
           } catch {
             // Webhooks and polling below still provide eventual consistency.
           }
@@ -468,7 +538,7 @@ export default function BillingPage() {
         setCheckoutPlan(null);
       }
     },
-    [dispatch, t],
+    [dispatch, runBillingAction, t],
   );
 
   const ensurePaddle = async () => {
@@ -505,9 +575,12 @@ export default function BillingPage() {
   const launchCheckout = async (checkout: CheckoutResponse, tier: PlanTier) => {
     const transactionId = checkout.transactionId;
     const checkoutUrl = checkout.checkoutUrl ?? checkout.url;
+    const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
+    const fallbackMessage = t('checkoutOpened', { plan: planName });
 
     if (transactionId) {
       const paddle = await ensurePaddle();
+      showBillingResult(checkout, 'success', fallbackMessage, ['TRIAL_WILL_BE_CANCELLED']);
       activeCheckoutTransactionIdRef.current = transactionId;
       paddle.Checkout.open({
         transactionId,
@@ -518,15 +591,13 @@ export default function BillingPage() {
         },
       } as unknown as CheckoutOpenOptions);
     } else if (checkoutUrl) {
+      showBillingResult(checkout, 'success', fallbackMessage, ['TRIAL_WILL_BE_CANCELLED']);
       if (typeof window !== 'undefined') {
         window.location.assign(checkoutUrl);
       }
     } else {
       throw new Error('Billing API did not return a transaction ID or checkout URL.');
     }
-
-    const planName = plans.find((plan) => plan.tier === tier)?.name || tier;
-    showPopup('info', t('checkoutOpened', { plan: planName }));
   };
 
   const handleCheckoutResponse = async (
@@ -535,19 +606,31 @@ export default function BillingPage() {
     billingCycle: BillingCycle,
     bypassTrialWarning: boolean,
   ) => {
-    const code = readResponseCode(checkout);
+    const code = extractBillingCode(checkout);
 
     if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
-      await schedulePlanChange(tier, billingCycle, { fromCheckoutConflict: true });
+      setActiveSubscriptionConflict({
+        tier,
+        billingCycle,
+        message: extractBillingMessage(checkout) ?? t('activeSubscriptionConflictBody'),
+      });
+      setCheckoutPlan(null);
       return;
     }
 
-    if (code === 'TRIAL_WILL_BE_CANCELLED' && !bypassTrialWarning) {
+    const trialCancellationWarning =
+      extractTrialCancellationWarning(checkout) ??
+      (code === 'TRIAL_WILL_BE_CANCELLED'
+        ? { code: 'TRIAL_WILL_BE_CANCELLED', message: extractBillingMessage(checkout) ?? t('trialWarningBody') }
+        : null);
+
+    if (trialCancellationWarning && !bypassTrialWarning) {
       setTrialWarning({
         tier,
         billingCycle,
         withTrial: false,
         checkout,
+        message: trialCancellationWarning.message,
       });
       setCheckoutPlan(null);
       return;
@@ -572,32 +655,43 @@ export default function BillingPage() {
         billingCycle: targetCycle,
         withTrial,
       });
+      const responseData = assertBillingApiSuccess(response.data) as CheckoutResponse;
 
-      await handleCheckoutResponse(response.data as CheckoutResponse, tier, targetCycle, Boolean(options?.bypassTrialWarning));
+      await handleCheckoutResponse(responseData, tier, targetCycle, Boolean(options?.bypassTrialWarning));
     } catch (paymentError) {
-      const code = getBillingErrorCode(paymentError);
-      const responseData = getAxiosResponseData(paymentError) as CheckoutResponse | null;
+      const responseData = getBillingErrorPayload(paymentError) as CheckoutResponse | null;
+      const code = extractBillingCode(responseData);
 
       if (code === 'ACTIVE_PADDLE_SUBSCRIPTION_EXISTS') {
-        await schedulePlanChange(tier, targetCycle, { fromCheckoutConflict: true });
+        setActiveSubscriptionConflict({
+          tier,
+          billingCycle: targetCycle,
+          message: extractBillingMessage(responseData) ?? t('activeSubscriptionConflictBody'),
+        });
+        setCheckoutPlan(null);
         return;
       }
 
-      if (code === 'TRIAL_WILL_BE_CANCELLED' && !options?.bypassTrialWarning) {
+      const trialCancellationWarning =
+        extractTrialCancellationWarning(responseData) ??
+        (code === 'TRIAL_WILL_BE_CANCELLED'
+          ? { code: 'TRIAL_WILL_BE_CANCELLED', message: extractBillingMessage(responseData) ?? t('trialWarningBody') }
+          : null);
+
+      if (trialCancellationWarning && !options?.bypassTrialWarning) {
         setTrialWarning({
           tier,
           billingCycle: targetCycle,
           withTrial,
           checkout: responseData,
+          message: trialCancellationWarning.message,
         });
         setCheckoutPlan(null);
         return;
       }
 
       setCheckoutPlan(null);
-      const message = getPaymentErrorMessage(paymentError, 'Unable to start Paddle checkout.');
-      setCheckoutError(message);
-      showPopup('error', message);
+      showBillingFailure(paymentError, 'Unable to start Paddle checkout.', { setCheckoutError: true });
     }
   };
 
@@ -620,9 +714,7 @@ export default function BillingPage() {
       }
     } catch (err) {
       setCheckoutPlan(null);
-      const message = getPaymentErrorMessage(err, 'Unable to start Paddle checkout.');
-      setCheckoutError(message);
-      showPopup('error', message);
+      showBillingFailure(err, 'Unable to start Paddle checkout.', { setCheckoutError: true });
     }
   };
 
@@ -640,10 +732,10 @@ export default function BillingPage() {
 
   const handleAutoRenewToggle = async (enabled: boolean) => {
     try {
-      await dispatch(setAutoRenew({ enabled })).unwrap();
-      showPopup('success', enabled ? t('autoRenewResumed') : t('autoRenewDisabled'));
+      const result = await dispatch(setAutoRenew({ enabled })).unwrap();
+      showBillingResult(result, 'success', enabled ? t('autoRenewResumed') : t('autoRenewDisabled'));
     } catch (err) {
-      showPopup('error', getPaymentErrorMessage(err, 'Unable to update auto-renew.'));
+      showBillingFailure(err, 'Unable to update auto-renew.');
     }
   };
 
@@ -651,11 +743,19 @@ export default function BillingPage() {
     setUpdatePaymentLoading(true);
 
     try {
-      const response = await apiClient.get('/billing/payment-method');
-      const updateUrl: string | undefined = response.data?.updateUrl ?? response.data?.portalUrl;
-      if (updateUrl) window.location.href = updateUrl;
+      const response = await runBillingAction<{ updateUrl?: string; portalUrl?: string }>(
+        () => apiClient.get('/billing/payment-method'),
+        { fallbackErrorMessage: 'Unable to open payment method update.' },
+      );
+      const updateUrl = response.updateUrl ?? response.portalUrl;
+
+      if (updateUrl) {
+        window.location.href = updateUrl;
+      } else {
+        showPopup('error', 'Billing API did not return a payment method URL.');
+      }
     } catch {
-      // Ignore; payment state remains visible and the user can retry.
+      // Error popup/modal is handled by runBillingAction.
     } finally {
       setUpdatePaymentLoading(false);
     }
@@ -665,13 +765,19 @@ export default function BillingPage() {
     setPortalLoading(true);
 
     try {
-      const response = await apiClient.get('/billing/portal');
-      const portalUrl: string | undefined = response.data?.portalUrl;
+      const response = await runBillingAction<{ portalUrl?: string }>(
+        () => apiClient.get('/billing/portal'),
+        { fallbackErrorMessage: 'Unable to open the billing portal.' },
+      );
+      const portalUrl = response.portalUrl;
+
       if (portalUrl) {
         window.open(portalUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        showPopup('error', 'Billing API did not return a portal URL.');
       }
     } catch {
-      // Non-fatal; history remains visible.
+      // Error popup/modal is handled by runBillingAction.
     } finally {
       setPortalLoading(false);
     }
@@ -719,12 +825,14 @@ export default function BillingPage() {
               ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
               : popupMessage.type === 'info'
                 ? 'border-sky-200 bg-sky-50 text-sky-900'
-                : 'border-red-200 bg-red-50 text-red-800'
+                : popupMessage.type === 'warning'
+                  ? 'border-amber-200 bg-amber-50 text-amber-900'
+                  : 'border-red-200 bg-red-50 text-red-800'
           }`}
-          role="status"
+          role={popupMessage.type === 'error' || popupMessage.type === 'warning' ? 'alert' : 'status'}
           aria-live="polite"
         >
-          <p className="text-sm font-medium">{popupMessage.text}</p>
+          <p className="whitespace-pre-line text-sm font-medium">{popupMessage.text}</p>
         </div>
       )}
 
@@ -732,7 +840,7 @@ export default function BillingPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="text-lg font-semibold text-gray-950">{t('trialWarningTitle')}</h2>
-            <p className="mt-2 text-sm leading-6 text-gray-600">{t('trialWarningBody')}</p>
+            <p className="mt-2 text-sm leading-6 text-gray-600">{trialWarning.message || t('trialWarningBody')}</p>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
@@ -750,6 +858,77 @@ export default function BillingPage() {
                 className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
               >
                 {t('continueToCheckout')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSubscriptionConflict && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-gray-950">{t('activeSubscriptionTitle')}</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">{activeSubscriptionConflict.message}</p>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubscriptionConflict(null);
+                  setCheckoutPlan(null);
+                }}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {t('notNow')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const pending = activeSubscriptionConflict;
+                  setActiveSubscriptionConflict(null);
+                  setCheckoutPlan(pending.tier);
+                  void schedulePlanChange(pending.tier, pending.billingCycle, { fromCheckoutConflict: true });
+                }}
+                className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+              >
+                {t('changePlanInstead')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {billingErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-gray-950">{t('subscriptionMissingTitle')}</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">{billingErrorModal.message}</p>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setBillingErrorModal(null)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {t('dismiss')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBillingErrorModal(null);
+                  window.location.href = `/${locale}/contact`;
+                }}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {t('contactSupport')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBillingErrorModal(null);
+                  void handleOpenInvoicePortal();
+                }}
+                className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+              >
+                {t('openInvoicePortal')}
               </button>
             </div>
           </div>
