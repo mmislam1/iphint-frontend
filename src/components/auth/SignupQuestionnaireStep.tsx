@@ -1,11 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
-import { useRouter } from '@/i18n/routing';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
   saveSignupQuestionnaire,
@@ -131,32 +129,19 @@ function SelectField({
   );
 }
 
-export default function SignupQuestionnaireStep() {
+export default function SignupQuestionnaireStep({ onComplete }: { onComplete?: () => void }) {
   const locale = useLocale();
   const t = useTranslations('Auth.questionnairePage');
   const dispatch = useAppDispatch();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const savedAnswers = useAppSelector((state) => state.signupQuestionnaire.answers);
   const [answers, setAnswers] = useState<SignupQuestionnaireAnswers>(savedAnswers);
 
   const illustrationSrc = locale === 'kr' ? '/signup1_kr.svg' : '/signup1_en.svg';
-  const accountStepHref = useMemo(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('step', 'account');
-    const query = params.toString();
-
-    return query ? `/signup?${query}` : '/signup?step=account';
-  }, [searchParams]);
 
   const isComplete = Object.values(answers).every((value) => value.trim().length > 0);
 
   const updateAnswer = (name: keyof SignupQuestionnaireAnswers, value: string) => {
     setAnswers((current) => ({ ...current, [name]: value }));
-  };
-
-  const goToAccountStep = () => {
-    router.push(accountStepHref);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -173,7 +158,7 @@ export default function SignupQuestionnaireStep() {
         completedAt: new Date().toISOString(),
       }),
     );
-    goToAccountStep();
+    onComplete?.();
   };
 
   const handleSkip = () => {
@@ -190,7 +175,7 @@ export default function SignupQuestionnaireStep() {
         completedAt: new Date().toISOString(),
       }),
     );
-    goToAccountStep();
+    onComplete?.();
   };
 
   return (

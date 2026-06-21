@@ -173,11 +173,10 @@ function SignupForm() {
     verificationRedirectRef.current = true;
     const action = await dispatch(registerUser(submitData));
     if (registerUser.fulfilled.match(action)) {
-      dispatch(clearSignupQuestionnaire());
-
       const noticeMessage = action.payload.message || '';
       const target = `/signup/verification-request?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(noticeMessage)}`;
       router.push(target);
+      dispatch(clearSignupQuestionnaire());
       return;
     }
 
@@ -442,28 +441,16 @@ function SignupAccountStep() {
 }
 
 function SignupStepContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const hasCompletedQuestionnaire = useSelector(
     (state: RootState) => Boolean(state.signupQuestionnaire.completedAt),
   );
-  const isAccountStep = searchParams.get('step') === 'account';
-  const questionnaireHref = useMemo(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('step');
-    const query = params.toString();
+  const [activeStep, setActiveStep] = useState<'questionnaire' | 'account'>(() =>
+    hasCompletedQuestionnaire ? 'account' : 'questionnaire',
+  );
+  const shouldShowAccountStep = activeStep === 'account' || hasCompletedQuestionnaire;
 
-    return query ? `/signup?${query}` : '/signup';
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (isAccountStep && !hasCompletedQuestionnaire) {
-      router.replace(questionnaireHref);
-    }
-  }, [hasCompletedQuestionnaire, isAccountStep, questionnaireHref, router]);
-
-  if (!isAccountStep || !hasCompletedQuestionnaire) {
-    return <SignupQuestionnaireStep />;
+  if (!shouldShowAccountStep) {
+    return <SignupQuestionnaireStep onComplete={() => setActiveStep('account')} />;
   }
 
   return <SignupAccountStep />;
