@@ -84,6 +84,12 @@ function PlanSummary({
   numberFormatter,
   trialDaysLeft,
   trialEndsAt,
+  autoRenewEnabled,
+  autoRenewLoading,
+  canToggleAutoRenew,
+  renewalEndsAt,
+  renewalRenewsAt,
+  onAutoRenewToggle,
 }: {
   t: BillingTranslator;
   currentPlanName: string;
@@ -99,7 +105,20 @@ function PlanSummary({
   numberFormatter: Intl.NumberFormat;
   trialDaysLeft: number | null;
   trialEndsAt: string | null;
+  autoRenewEnabled: boolean;
+  autoRenewLoading: boolean;
+  canToggleAutoRenew: boolean;
+  renewalEndsAt: string | null;
+  renewalRenewsAt: string | null;
+  onAutoRenewToggle: (enabled: boolean) => void;
 }) {
+  const renewalDetail =
+    !hasEffectivePlan || (!canToggleAutoRenew && !renewalEndsAt && !renewalRenewsAt)
+      ? t('subscribeToPaidPlan')
+      : autoRenewEnabled
+        ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
+        : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) });
+
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -123,15 +142,39 @@ function PlanSummary({
           )}
         </div>
 
-        {isTrial && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-            {trialDaysLeft != null
-              ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
-              : trialEndsAt
-                ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
-                : t('trialActive')}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-60 sm:items-end">
+          {isTrial && (
+            <div className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:w-auto">
+              {trialDaysLeft != null
+                ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
+                : trialEndsAt
+                  ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
+                  : t('trialActive')}
+            </div>
+          )}
+          <div className="w-full rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 sm:w-auto sm:min-w-60">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-gray-900">
+                {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
+              </p>
+              {canToggleAutoRenew && (
+                <button
+                  type="button"
+                  onClick={() => onAutoRenewToggle(!autoRenewEnabled)}
+                  disabled={autoRenewLoading}
+                  className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {autoRenewLoading
+                    ? t('processing')
+                    : autoRenewEnabled
+                      ? t('turnRenewalOff')
+                      : t('turnRenewalOn')}
+                </button>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">{renewalDetail}</p>
           </div>
-        )}
+        </div>
       </div>
 
       {hasEffectivePlan && (
@@ -192,72 +235,6 @@ function ScheduleSummary({
         <p>{t('scheduledPlanEffectiveAt', { date: formatDate(scheduledPlan.effectiveAt) })}</p>
         <p>{t('scheduledPlanChargeAt', { date: formatDate(scheduledPlan.chargeAt) })}</p>
         <p>{t('scheduledPlanActivatesAt', { date: formatDate(scheduledPlan.activatesAt) })}</p>
-      </div>
-    </section>
-  );
-}
-
-function RenewalControl({
-  t,
-  autoRenewEnabled,
-  autoRenewLoading,
-  canToggleAutoRenew,
-  renewalEndsAt,
-  renewalRenewsAt,
-  formatDate,
-  onToggle,
-}: {
-  t: BillingTranslator;
-  autoRenewEnabled: boolean;
-  autoRenewLoading: boolean;
-  canToggleAutoRenew: boolean;
-  renewalEndsAt: string | null;
-  renewalRenewsAt: string | null;
-  formatDate: FormatDate;
-  onToggle: (enabled: boolean) => void;
-}) {
-  const renewalDetail =
-    !canToggleAutoRenew && !renewalEndsAt && !renewalRenewsAt
-      ? t('subscribeToPaidPlan')
-      : autoRenewEnabled
-        ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
-        : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) });
-
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('renewalControlTitle')}</p>
-          <h2 className="mt-2 text-lg font-semibold text-gray-900">
-            {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">{renewalDetail}</p>
-        </div>
-
-        <div className="grid w-full grid-cols-2 rounded-lg border border-gray-300 bg-white p-1 md:w-auto">
-          <button
-            type="button"
-            onClick={() => onToggle(true)}
-            disabled={!canToggleAutoRenew || autoRenewLoading || autoRenewEnabled}
-            className={[
-              'rounded-md px-4 py-2 text-center text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-              autoRenewEnabled ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
-            ].join(' ')}
-          >
-            {autoRenewLoading && !autoRenewEnabled ? t('processing') : t('on')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onToggle(false)}
-            disabled={!canToggleAutoRenew || autoRenewLoading || !autoRenewEnabled}
-            className={[
-              'rounded-md px-4 py-2 text-center text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-              !autoRenewEnabled ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
-            ].join(' ')}
-          >
-            {autoRenewLoading && autoRenewEnabled ? t('processing') : t('off')}
-          </button>
-        </div>
       </div>
     </section>
   );
@@ -1237,6 +1214,12 @@ export default function BillingPage() {
         numberFormatter={numberFormatter}
         trialDaysLeft={trialDaysLeft}
         trialEndsAt={trialEndsAt}
+        autoRenewEnabled={autoRenewEnabled}
+        autoRenewLoading={autoRenewLoading}
+        canToggleAutoRenew={canToggleAutoRenew}
+        renewalEndsAt={renewalEndsAt}
+        renewalRenewsAt={renewalRenewsAt}
+        onAutoRenewToggle={handleAutoRenewToggle}
       />
 
       <ScheduleSummary
@@ -1244,17 +1227,6 @@ export default function BillingPage() {
         scheduledPlan={visibleScheduledPlan}
         formatDate={formatDate}
         getCycleLabel={getCycleLabel}
-      />
-
-      <RenewalControl
-        t={t}
-        autoRenewEnabled={autoRenewEnabled}
-        autoRenewLoading={autoRenewLoading}
-        canToggleAutoRenew={canToggleAutoRenew}
-        renewalEndsAt={renewalEndsAt}
-        renewalRenewsAt={renewalRenewsAt}
-        formatDate={formatDate}
-        onToggle={handleAutoRenewToggle}
       />
 
       <PlanPicker
