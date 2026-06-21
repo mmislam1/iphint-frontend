@@ -9,10 +9,12 @@ import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
 	formatNotificationTimestamp,
 	localizeNotificationText as localizeStoredNotificationText,
+	normalizeNotificationLocale,
 	type LocalizableNotification,
 } from '@/lib/notifications';
 import {
 	fetchNotifications,
+	fetchSettingsOverview,
 	markAllNotificationsRead,
 	markNotificationRead,
 	deleteNotification,
@@ -70,7 +72,12 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 	const [notificationQuery, setNotificationQuery] = useState('');
 	const notifications = useAppSelector((state) => state.account.notifications.topbar.items) as NotificationItem[];
 	const unreadCount = useAppSelector((state) => state.account.notifications.unreadCount);
+	const notificationPreferences = useAppSelector((state) => state.account.settings.notificationPreferences);
+	const settingsLoaded = useAppSelector((state) => state.account.settings.loaded);
+	const settingsLoading = useAppSelector((state) => state.account.settings.loading);
+	const notificationLocale = normalizeNotificationLocale(notificationPreferences.locale ?? locale);
 	const menuRef = useRef<HTMLDivElement | null>(null);
+	const notificationQueryRef = useRef(notificationQuery);
 
 	const pageTitle = (() => {
 		if (!pathname) return t('pageTitles.dashboard');
@@ -83,7 +90,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 		return t('pageTitles.dashboard');
 	})();
 
-	const loadNotifications = async (q = '') => {
+	const loadNotifications = React.useCallback(async (q = '') => {
 		await dispatch(
 			fetchNotifications({
 				scope: 'topbar',
@@ -91,20 +98,30 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 				page: 1,
 				limit: 8,
 				q,
+				locale: notificationLocale,
 			}),
 		).unwrap();
-	};
+	}, [dispatch, notificationLocale]);
 
-	const loadUnreadCount = async () => {
+	const loadUnreadCount = React.useCallback(async () => {
 		await dispatch(
 			fetchNotifications({
 				scope: 'topbar',
 				status: 'unread',
 				page: 1,
 				limit: 1,
+				locale: notificationLocale,
 			}),
 		).unwrap();
-	};
+	}, [dispatch, notificationLocale]);
+
+	useEffect(() => {
+		if (settingsLoaded || settingsLoading) return;
+
+		dispatch(fetchSettingsOverview()).unwrap().catch(() => {
+			return;
+		});
+	}, [dispatch, settingsLoaded, settingsLoading]);
 
 	useEffect(() => {
 		loadUnreadCount().catch(() => {
@@ -120,17 +137,19 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 		return () => {
 			window.clearInterval(refreshInterval);
 		};
-	}, [dispatch]);
+	}, [loadUnreadCount]);
 
 	useEffect(() => {
 		if (!notificationOpen) return;
 
-		loadNotifications(notificationQuery).catch(() => {
+		loadNotifications(notificationQueryRef.current).catch(() => {
 			return;
 		});
-	}, [notificationOpen, dispatch]);
+	}, [notificationOpen, loadNotifications]);
 
 	useEffect(() => {
+		notificationQueryRef.current = notificationQuery;
+
 		if (!notificationOpen) return;
 
 		const timeout = window.setTimeout(() => {
@@ -140,7 +159,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 		}, 240);
 
 		return () => window.clearTimeout(timeout);
-	}, [notificationQuery, notificationOpen, dispatch]);
+	}, [notificationQuery, notificationOpen, loadNotifications]);
 
 	useEffect(() => {
 		const closeOnOutside = (event: MouseEvent) => {
@@ -154,7 +173,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 	}, []);
 
 	const markRead = async (id: string) => {
-		await dispatch(markNotificationRead(id));
+		await dispatch(markNotificationRead({ notificationId: id, locale: notificationLocale }));
 	};
 
 	const removeNotification = async (id: string) => {

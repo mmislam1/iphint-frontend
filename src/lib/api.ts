@@ -66,7 +66,7 @@ const clearStoredSession = () => {
   localStorage.removeItem('user');
 };
 
-const OPTIONAL_401_PATH_PREFIXES = ['/user-details/notifications'];
+const OPTIONAL_401_PATH_PREFIXES = ['/user-details/notifications', '/user/notifications'];
 
 let isAuthRedirectInProgress = false;
 

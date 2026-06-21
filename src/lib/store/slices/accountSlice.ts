@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
+import { normalizeNotificationLocale, type NotificationLocale, type NotificationLocaleInput } from '@/lib/notifications';
 import { detectCountryCodeByIp } from '../../currency';
 
 export type PlanTier = 'starter' | 'pro' | 'premium';
@@ -149,7 +150,12 @@ export interface SettingsNotifications {
   weeklyRescanEnabled: boolean;
   notifyOnNewMatches: boolean;
   summaryFrequency: SummaryFrequency;
+  locale?: NotificationLocale;
 }
+
+export type UpdateNotificationPreferencesPayload = Partial<Omit<SettingsNotifications, 'locale'>> & {
+  locale?: NotificationLocaleInput;
+};
 
 export interface NotificationItem {
   _id: string;
@@ -193,6 +199,28 @@ const defaultNotificationPrefs: SettingsNotifications = {
   weeklyRescanEnabled: true,
   notifyOnNewMatches: true,
   summaryFrequency: 'instant',
+};
+
+const normalizeSettingsNotifications = (value?: UpdateNotificationPreferencesPayload | null): SettingsNotifications => {
+  const source = value || {};
+  return {
+    ...defaultNotificationPrefs,
+    ...source,
+    locale: source.locale ? normalizeNotificationLocale(source.locale) : undefined,
+  };
+};
+
+const normalizeNotificationPreferencesPatch = (value: UpdateNotificationPreferencesPayload) => {
+  const payload: UpdateNotificationPreferencesPayload = {};
+
+  if (typeof value.emailEnabled === 'boolean') payload.emailEnabled = value.emailEnabled;
+  if (typeof value.inAppEnabled === 'boolean') payload.inAppEnabled = value.inAppEnabled;
+  if (typeof value.weeklyRescanEnabled === 'boolean') payload.weeklyRescanEnabled = value.weeklyRescanEnabled;
+  if (typeof value.notifyOnNewMatches === 'boolean') payload.notifyOnNewMatches = value.notifyOnNewMatches;
+  if (value.summaryFrequency) payload.summaryFrequency = value.summaryFrequency;
+  if (value.locale) payload.locale = normalizeNotificationLocale(value.locale);
+
+  return payload;
 };
 
 const getUnreadCandidate = (
@@ -437,12 +465,12 @@ export const fetchSettingsOverview = createAsyncThunk<
   { rejectValue: string }
 >('account/fetchSettingsOverview', async (_, { rejectWithValue }) => {
   try {
-    const response = await apiClient.get('/user-details/settings');
+    const response = await apiClient.get('/user/settings');
     const settings = response.data?.settings || {};
 
     return {
       profile: { ...defaultProfile, ...(settings.profile || {}) },
-      notifications: { ...defaultNotificationPrefs, ...(settings.notifications || {}) },
+      notifications: normalizeSettingsNotifications(settings.notifications),
       unreadCount: Number(settings.unreadNotifications || 0),
     };
   } catch (error) {
@@ -452,12 +480,19 @@ export const fetchSettingsOverview = createAsyncThunk<
 
 export const fetchNotifications = createAsyncThunk<
   { scope: NotificationScope; items: NotificationItem[]; unreadCount: number },
-  { scope: NotificationScope; status: NotificationFilter; q?: string; page?: number; limit?: number },
+  {
+    scope: NotificationScope;
+    status: NotificationFilter;
+    q?: string;
+    page?: number;
+    limit?: number;
+    locale?: NotificationLocaleInput;
+  },
   { rejectValue: string }
->('account/fetchNotifications', async ({ scope, status, q = '', page = 1, limit = 20 }, { rejectWithValue }) => {
+>('account/fetchNotifications', async ({ scope, status, q = '', page = 1, limit = 20, locale }, { rejectWithValue }) => {
   try {
-    const response = await apiClient.get('/user-details/notifications', {
-      params: { status, q, page, limit },
+    const response = await apiClient.get('/user/notifications', {
+      params: { locale: normalizeNotificationLocale(locale), status, q, page, limit },
     });
 
     return {
@@ -484,12 +519,20 @@ export const updateProfileSettings = createAsyncThunk<SettingsProfile, SettingsP
 
 export const updateNotificationPreferences = createAsyncThunk<
   SettingsNotifications,
-  SettingsNotifications,
-  { rejectValue: string }
->('account/updateNotificationPreferences', async (preferences, { rejectWithValue }) => {
+  UpdateNotificationPreferencesPayload,
+  { rejectValue: string; state: { account: AccountState } }
+>('account/updateNotificationPreferences', async (preferences, { rejectWithValue, getState }) => {
   try {
-    await apiClient.patch('/user-details/settings/notifications', preferences);
-    return preferences;
+    const payload = normalizeNotificationPreferencesPatch(preferences);
+    const currentPreferences = getState().account.settings.notificationPreferences;
+    const response = await apiClient.patch('/user/settings/notifications', payload);
+    const updatedNotifications =
+      response.data?.settings?.notifications ||
+      response.data?.notifications ||
+      response.data?.notificationPreferences ||
+      { ...currentPreferences, ...payload };
+
+    return normalizeSettingsNotifications({ ...currentPreferences, ...updatedNotifications });
   } catch (error) {
     return rejectWithValue(getApiErrorMessage(error, 'Could not update notification preferences.'));
   }
@@ -507,11 +550,17 @@ export const updatePasswordSettings = createAsyncThunk<
   }
 });
 
-export const markNotificationRead = createAsyncThunk<string, string, { rejectValue: string }>(
+export const markNotificationRead = createAsyncThunk<
+  string,
+  { notificationId: string; locale?: NotificationLocaleInput },
+  { rejectValue: string }
+>(
   'account/markNotificationRead',
-  async (notificationId, { rejectWithValue }) => {
+  async ({ notificationId, locale }, { rejectWithValue }) => {
     try {
-      await apiClient.patch(`/user-details/notifications/${notificationId}/read`);
+      await apiClient.patch(`/user/notifications/${notificationId}/read`, null, {
+        params: { locale: normalizeNotificationLocale(locale) },
+      });
       return notificationId;
     } catch (error) {
       return rejectWithValue(getApiErrorMessage(error, 'Could not update notification.'));
@@ -621,6 +670,7 @@ interface AccountState {
   settings: {
     profile: SettingsProfile;
     notificationPreferences: SettingsNotifications;
+    loaded: boolean;
     loading: boolean;
     error: string | null;
     profileSaving: boolean;
@@ -677,6 +727,7 @@ const initialState: AccountState = {
   settings: {
     profile: defaultProfile,
     notificationPreferences: defaultNotificationPrefs,
+    loaded: false,
     loading: false,
     error: null,
     profileSaving: false,
@@ -866,6 +917,7 @@ const accountSlice = createSlice({
       })
       .addCase(fetchSettingsOverview.fulfilled, (state, action) => {
         state.settings.loading = false;
+        state.settings.loaded = true;
         state.settings.profile = action.payload.profile;
         state.settings.notificationPreferences = action.payload.notifications;
         state.notifications.unreadCount = action.payload.unreadCount;

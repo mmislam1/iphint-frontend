@@ -1,4 +1,6 @@
-export type AppLocale = 'en' | 'kr' | string;
+export type AppLocale = 'en' | 'kr' | 'ko' | string;
+export type NotificationLocale = 'en' | 'ko';
+export type NotificationLocaleInput = NotificationLocale | 'kr' | 'ko-KR' | 'en-US' | string | null | undefined;
 
 export interface LocalizableNotification {
   title?: string;
@@ -15,7 +17,15 @@ export interface LocalizableNotification {
 
 type NotificationField = 'title' | 'message';
 
-const toIntlLocale = (locale: AppLocale) => (locale === 'kr' ? 'ko-KR' : 'en-US');
+export const normalizeNotificationLocale = (locale: NotificationLocaleInput): NotificationLocale => {
+  const normalized = typeof locale === 'string' ? locale.trim().toLowerCase() : '';
+  return normalized === 'ko' || normalized === 'ko-kr' || normalized === 'kr' ? 'ko' : 'en';
+};
+
+export const isKoreanNotificationLocale = (locale: NotificationLocaleInput) =>
+  normalizeNotificationLocale(locale) === 'ko';
+
+const toIntlLocale = (locale: AppLocale) => (isKoreanNotificationLocale(locale) ? 'ko-KR' : 'en-US');
 
 const readParam = (item: LocalizableNotification | undefined, key: string): string | null => {
   const sources = [item?.params, item?.metadata, item?.data];
@@ -40,7 +50,7 @@ const typedNotificationText = (
   field: NotificationField,
   locale: AppLocale,
 ) => {
-  if (locale !== 'kr') return null;
+  if (!isKoreanNotificationLocale(locale)) return null;
 
   const type = normalizeKey(item?.type ?? item?.translationKey);
   if (!type) return null;
@@ -74,7 +84,7 @@ const typedNotificationText = (
 };
 
 const translateStoredEnglishText = (value: string, locale: AppLocale) => {
-  if (locale !== 'kr') return value;
+  if (!isKoreanNotificationLocale(locale)) return value;
 
   const normalized = value.trim();
 

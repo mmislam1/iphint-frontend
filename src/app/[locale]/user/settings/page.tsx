@@ -8,7 +8,10 @@ import { useRouter } from '@/i18n/routing';
 import {
   formatNotificationTimestamp,
   localizeNotificationText,
+  normalizeNotificationLocale,
   type LocalizableNotification,
+  type NotificationLocale,
+  type NotificationLocaleInput,
 } from '@/lib/notifications';
 import {
   setFontSize,
@@ -25,10 +28,10 @@ import {
   updateNotificationPreferences,
   updatePasswordSettings,
   updateProfileSettings,
+  type SettingsNotifications,
+  type SummaryFrequency,
 } from '@/lib/store/slices/accountSlice';
 import { syncUserProfile } from '@/lib/store/slices/userSlice';
-
-type SummaryFrequency = 'instant' | 'daily' | 'weekly';
 
 interface SettingsProfile {
   name: string;
@@ -39,14 +42,6 @@ interface SettingsProfile {
   phoneNumber: string;
   role: string;
   joiningDate: string;
-}
-
-interface SettingsNotifications {
-  emailEnabled: boolean;
-  inAppEnabled: boolean;
-  weeklyRescanEnabled: boolean;
-  notifyOnNewMatches: boolean;
-  summaryFrequency: SummaryFrequency;
 }
 
 interface NotificationItem extends LocalizableNotification {
@@ -126,6 +121,7 @@ export default function SettingsPage() {
     weeklyRescanEnabled: true,
     notifyOnNewMatches: true,
     summaryFrequency: 'instant',
+    locale: normalizeNotificationLocale(locale),
   });
 
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread'>('all');
@@ -155,29 +151,50 @@ export default function SettingsPage() {
     setError('');
   };
 
+  const resolveNotificationLocale = React.useCallback((value?: NotificationLocaleInput) => {
+    return normalizeNotificationLocale(value ?? storedNotificationPrefs.locale ?? locale);
+  }, [locale, storedNotificationPrefs.locale]);
+
+  const selectedNotificationLocale = resolveNotificationLocale(notificationPrefs.locale);
+
   const loadSettings = React.useCallback(async () => {
-    await dispatch(fetchSettingsOverview()).unwrap();
+    return dispatch(fetchSettingsOverview()).unwrap();
   }, [dispatch]);
 
-  const loadNotifications = React.useCallback(async (status: 'all' | 'unread', q = '') => {
+  const loadNotifications = React.useCallback(async (
+    status: 'all' | 'unread',
+    q = '',
+    nextLocale?: NotificationLocaleInput,
+  ) => {
     await dispatch(
-      fetchNotifications({ scope: 'settings', status, q, page: 1, limit: 20 }),
+      fetchNotifications({
+        scope: 'settings',
+        status,
+        q,
+        page: 1,
+        limit: 20,
+        locale: resolveNotificationLocale(nextLocale),
+      }),
     ).unwrap();
-  }, [dispatch]);
+  }, [dispatch, resolveNotificationLocale]);
 
   useEffect(() => {
     setProfile(storedProfile);
   }, [storedProfile]);
 
   useEffect(() => {
-    setNotificationPrefs(storedNotificationPrefs);
-  }, [storedNotificationPrefs]);
+    setNotificationPrefs({
+      ...storedNotificationPrefs,
+      locale: resolveNotificationLocale(storedNotificationPrefs.locale),
+    });
+  }, [resolveNotificationLocale, storedNotificationPrefs]);
 
   useEffect(() => {
     const bootstrap = async () => {
       try {
         setError('');
-        await Promise.all([loadSettings(), loadNotifications('all', '')]);
+        const settings = await loadSettings();
+        await loadNotifications('all', '', settings.notifications.locale);
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Failed to load settings');
         setSuccess('');
@@ -199,7 +216,11 @@ export default function SettingsPage() {
 
   const handleSavePreferences = async () => {
     try {
-      await dispatch(updateNotificationPreferences(notificationPrefs)).unwrap();
+      const savedPreferences = await dispatch(updateNotificationPreferences({
+        ...notificationPrefs,
+        locale: selectedNotificationLocale,
+      })).unwrap();
+      await loadNotifications(notificationFilter, notificationQuery, savedPreferences.locale);
       showMessage(t('preferencesSaved'));
     } catch (err) {
       showMessage(typeof err === 'string' ? err : t('preferencesSaveFailed'), true);
@@ -300,7 +321,7 @@ export default function SettingsPage() {
 
   const handleMarkRead = async (id: string) => {
     try {
-      await dispatch(markNotificationRead(id)).unwrap();
+      await dispatch(markNotificationRead({ notificationId: id, locale: selectedNotificationLocale })).unwrap();
       await loadNotifications(notificationFilter, notificationQuery);
     } catch {
       showMessage(t('markReadFailed'), true);
@@ -320,7 +341,10 @@ export default function SettingsPage() {
   const handleOpenNotification = async (item: NotificationItem) => {
     try {
       if (!item.isRead) {
-        await dispatch(markNotificationRead(item._id)).unwrap();
+        await dispatch(markNotificationRead({
+          notificationId: item._id,
+          locale: selectedNotificationLocale,
+        })).unwrap();
       }
 
       const targetPath = normalizeNotificationActionUrl(item.actionUrl);
@@ -561,6 +585,20 @@ export default function SettingsPage() {
               <option value="instant">{t('instant')}</option>
               <option value="daily">{t('daily')}</option>
               <option value="weekly">{t('weekly')}</option>
+            </select>
+          </label>
+
+          <label className="text-sm text-gray-600">
+            {t('notificationLanguage')}
+            <select
+              value={selectedNotificationLocale}
+              onChange={(e) =>
+                setNotificationPrefs((p) => ({ ...p, locale: e.target.value as NotificationLocale }))
+              }
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none"
+            >
+              <option value="en">{t('notificationLanguageEnglish')}</option>
+              <option value="ko">{t('notificationLanguageKorean')}</option>
             </select>
           </label>
         </div>
