@@ -4,7 +4,7 @@ import type { CheckoutOpenOptions, Paddle, PaddleEventData } from '@paddle/paddl
 import axios from 'axios';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Check, Crown } from 'lucide-react';
+import { AlertTriangle, Check, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
 import { formatPriceByCountry } from '@/lib/currency';
@@ -42,6 +42,16 @@ interface PendingTrialCheckout {
   billingCycle: BillingCycle;
   withTrial: boolean;
   checkout: CheckoutResponse | null;
+}
+
+interface PendingPurchaseConfirmation {
+  tier: PlanTier;
+  billingCycle: BillingCycle;
+  mode: 'checkout' | 'planChange';
+  planName: string;
+  price: string;
+  isUpgrade: boolean;
+  currentPlanName: string;
 }
 
 interface NormalizedScheduledPlan {
@@ -429,6 +439,7 @@ export default function BillingPage() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanTier | null>(null);
+  const [purchaseWarning, setPurchaseWarning] = useState<PendingPurchaseConfirmation | null>(null);
   const [trialWarning, setTrialWarning] = useState<PendingTrialCheckout | null>(null);
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<BillingHistoryItem[]>([]);
@@ -954,6 +965,44 @@ export default function BillingPage() {
     }
   };
 
+  const openPurchaseWarning = (
+    tier: PlanTier,
+    billingCycle: BillingCycle,
+    mode: PendingPurchaseConfirmation['mode'],
+  ) => {
+    const plan = plans.find((item) => item.tier === tier);
+    const priceValue = plan?.pricing?.[billingCycle];
+    const targetTierIndex = tierOrder.indexOf(tier);
+
+    setCheckoutError(null);
+    setPurchaseWarning({
+      tier,
+      billingCycle,
+      mode,
+      planName: plan?.name || getPlanName(tier),
+      price: typeof priceValue === 'number' ? formatPrice(priceValue) : '--',
+      isUpgrade: currentTierIndex >= 0 && targetTierIndex >= 0 && targetTierIndex > currentTierIndex,
+      currentPlanName,
+    });
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!purchaseWarning) return;
+
+    const pending = purchaseWarning;
+    setPurchaseWarning(null);
+
+    if (pending.mode === 'planChange') {
+      await schedulePlanChange(pending.tier, pending.billingCycle);
+      return;
+    }
+
+    await beginCheckout(pending.tier, {
+      billingCycle: pending.billingCycle,
+      withTrial: !isTrial,
+    });
+  };
+
   const handlePlanAction = async (tier: PlanTier) => {
     if (hasExistingPaddleSubscription) {
       const cancelScheduledChange = Boolean(hasScheduledPlan && currentTier && tier === currentTier);
@@ -966,11 +1015,16 @@ export default function BillingPage() {
 
       const targetTier = cancelScheduledChange && currentTier ? currentTier : tier;
       const targetCycle = cancelScheduledChange ? currentBillingCycle : cycle;
-      await schedulePlanChange(targetTier, targetCycle, { cancelScheduledChange });
+      if (cancelScheduledChange) {
+        await schedulePlanChange(targetTier, targetCycle, { cancelScheduledChange });
+        return;
+      }
+
+      openPurchaseWarning(targetTier, targetCycle, 'planChange');
       return;
     }
 
-    await beginCheckout(tier, { withTrial: !isTrial });
+    openPurchaseWarning(tier, cycle, 'checkout');
   };
 
   const handleAutoRenewToggle = async (enabled: boolean) => {
@@ -1047,6 +1101,77 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
+      {purchaseWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="purchase-warning-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 id="purchase-warning-title" className="text-lg font-semibold text-gray-950">
+                  {purchaseWarning.mode === 'planChange'
+                    ? t('planChangeWarningTitle')
+                    : t('purchaseWarningTitle')}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  {purchaseWarning.mode === 'planChange'
+                    ? t('planChangeWarningBody')
+                    : t('purchaseWarningBody')}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-gray-500">{t('purchaseWarningPlanLabel')}</span>
+                <span className="text-right font-semibold text-gray-950">{purchaseWarning.planName}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-gray-500">{t('purchaseWarningPriceLabel')}</span>
+                <span className="text-right font-semibold text-gray-950">
+                  {purchaseWarning.price} / {t('perMonth')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-gray-500">{t('purchaseWarningBillingLabel')}</span>
+                <span className="text-right font-semibold text-gray-950">
+                  {purchaseWarning.billingCycle === 'annual' ? t('billedAnnually') : t('billedMonthly')}
+                </span>
+              </div>
+            </div>
+
+            {purchaseWarning.isUpgrade && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                {t('upgradeForfeitWarning', { plan: purchaseWarning.currentPlanName })}
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setPurchaseWarning(null)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {t('cancelPurchase')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPurchase}
+                className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+              >
+                {purchaseWarning.mode === 'planChange' ? t('confirmPlanChange') : t('confirmPurchase')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {trialWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">

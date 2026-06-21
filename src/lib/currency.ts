@@ -3,9 +3,12 @@ export const KRW_PER_USD = 1360;
 export const isKoreanCountry = (countryCode: string): boolean =>
   String(countryCode || '').toUpperCase() === 'KR';
 
+export const roundPriceToOneDecimal = (value: number): number =>
+  Math.round((value + Number.EPSILON) * 10) / 10;
+
 export const formatPriceByCountry = (usd: number, countryCode: string): string => {
   if (isKoreanCountry(countryCode)) {
-    const krw = Math.round(usd * KRW_PER_USD);
+    const krw = Math.round(roundPriceToOneDecimal(usd) * KRW_PER_USD);
     return new Intl.NumberFormat('ko-KR', {
       style: 'currency',
       currency: 'KRW',
@@ -17,7 +20,8 @@ export const formatPriceByCountry = (usd: number, countryCode: string): string =
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-  }).format(usd);
+    maximumFractionDigits: 2,
+  }).format(roundPriceToOneDecimal(usd));
 };
 
 export const detectCountryCodeByIp = async (): Promise<string> => {

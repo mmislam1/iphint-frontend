@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import { selectToken } from "@/lib/store/slices/userSlice";
 import { setBillingCycle, selectBillingCycle } from "@/lib/store/slices/pricingSlice";
+import { roundPriceToOneDecimal } from "@/lib/currency";
 
 const PLAN_DATA = {
   en: [
@@ -89,7 +90,8 @@ export default function PricingCards() {
   const plans = PLAN_DATA[isKoreanLocale ? "kr" : "en"];
 
   const formatPrice = (value: number) => {
-    const formattedValue = numberFormatter.format(value);
+    const displayValue = isKoreanLocale ? value : roundPriceToOneDecimal(value);
+    const formattedValue = numberFormatter.format(displayValue);
     return isKoreanLocale ? formattedValue : `$${formattedValue}`;
   };
 
@@ -258,4 +260,3 @@ export default function PricingCards() {
     </section>
   );
 }
-
