@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, CheckCircle2, Mail, Palette, RefreshCcw, Search, Shield, Trash2, UserCircle2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
+import { getStoredNotificationLocale } from '@/lib/api';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { useRouter } from '@/i18n/routing';
 import {
@@ -121,7 +122,7 @@ export default function SettingsPage() {
     weeklyRescanEnabled: true,
     notifyOnNewMatches: true,
     summaryFrequency: 'instant',
-    locale: normalizeNotificationLocale(locale),
+    locale: normalizeNotificationLocale(getStoredNotificationLocale() ?? locale),
   });
 
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread'>('all');
@@ -152,7 +153,7 @@ export default function SettingsPage() {
   };
 
   const resolveNotificationLocale = React.useCallback((value?: NotificationLocaleInput) => {
-    return normalizeNotificationLocale(value ?? storedNotificationPrefs.locale ?? locale);
+    return normalizeNotificationLocale(value ?? storedNotificationPrefs.locale ?? getStoredNotificationLocale() ?? locale);
   }, [locale, storedNotificationPrefs.locale]);
 
   const selectedNotificationLocale = resolveNotificationLocale(notificationPrefs.locale);

@@ -1,6 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
+import {
+  apiClient,
+  getApiErrorMessage,
+  getApiPayloadMessages,
+  getStoredNotificationLocale,
+  setStoredNotificationLocale,
+} from '@/lib/api';
 import { normalizeNotificationLocale, type NotificationLocale, type NotificationLocaleInput } from '@/lib/notifications';
 import { detectCountryCodeByIp } from '../../currency';
 
@@ -468,9 +474,14 @@ export const fetchSettingsOverview = createAsyncThunk<
     const response = await apiClient.get('/user/settings');
     const settings = response.data?.settings || {};
 
+    const notifications = normalizeSettingsNotifications(settings.notifications);
+    if (notifications.locale) {
+      setStoredNotificationLocale(notifications.locale);
+    }
+
     return {
       profile: { ...defaultProfile, ...(settings.profile || {}) },
-      notifications: normalizeSettingsNotifications(settings.notifications),
+      notifications,
       unreadCount: Number(settings.unreadNotifications || 0),
     };
   } catch (error) {
@@ -491,8 +502,9 @@ export const fetchNotifications = createAsyncThunk<
   { rejectValue: string }
 >('account/fetchNotifications', async ({ scope, status, q = '', page = 1, limit = 20, locale }, { rejectWithValue }) => {
   try {
+    const requestLocale = normalizeNotificationLocale(locale ?? getStoredNotificationLocale());
     const response = await apiClient.get('/user/notifications', {
-      params: { locale: normalizeNotificationLocale(locale), status, q, page, limit },
+      params: { locale: requestLocale, status, q, page, limit },
     });
 
     return {
@@ -532,7 +544,12 @@ export const updateNotificationPreferences = createAsyncThunk<
       response.data?.notificationPreferences ||
       { ...currentPreferences, ...payload };
 
-    return normalizeSettingsNotifications({ ...currentPreferences, ...updatedNotifications });
+    const normalizedNotifications = normalizeSettingsNotifications({ ...currentPreferences, ...updatedNotifications });
+    if (normalizedNotifications.locale) {
+      setStoredNotificationLocale(normalizedNotifications.locale);
+    }
+
+    return normalizedNotifications;
   } catch (error) {
     return rejectWithValue(getApiErrorMessage(error, 'Could not update notification preferences.'));
   }
@@ -558,8 +575,9 @@ export const markNotificationRead = createAsyncThunk<
   'account/markNotificationRead',
   async ({ notificationId, locale }, { rejectWithValue }) => {
     try {
+      const requestLocale = normalizeNotificationLocale(locale ?? getStoredNotificationLocale());
       await apiClient.patch(`/user/notifications/${notificationId}/read`, null, {
-        params: { locale: normalizeNotificationLocale(locale) },
+        params: { locale: requestLocale },
       });
       return notificationId;
     } catch (error) {

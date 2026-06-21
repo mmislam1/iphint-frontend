@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalizeNotificationLocale, type NotificationLocaleInput } from '@/lib/notifications';
 
 const sanitizeBaseUrl = (value: string) =>
   value
@@ -30,10 +31,31 @@ const getStoredToken = () => {
   return localStorage.getItem('token');
 };
 
+const NOTIFICATION_LOCALE_STORAGE_KEY = 'notificationLocale';
+
+export const getStoredNotificationLocale = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const storedLocale = localStorage.getItem(NOTIFICATION_LOCALE_STORAGE_KEY);
+  return storedLocale ? normalizeNotificationLocale(storedLocale) : null;
+};
+
+export const setStoredNotificationLocale = (locale: NotificationLocaleInput) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(NOTIFICATION_LOCALE_STORAGE_KEY, normalizeNotificationLocale(locale));
+};
+
 const parseLocaleFromPathname = (pathname: string) => {
   const segment = pathname.split('/').filter(Boolean)[0];
   return segment === 'kr' ? 'kr' : 'en';
 };
+
+const toApiLocale = (locale: string | null | undefined) => normalizeNotificationLocale(locale);
 
 const getCurrentLocale = () => {
   if (typeof window === 'undefined') {
@@ -43,15 +65,24 @@ const getCurrentLocale = () => {
   return parseLocaleFromPathname(window.location.pathname || '/');
 };
 
+const getCurrentApiLocale = () => {
+  const storedLocale = getStoredNotificationLocale();
+  if (storedLocale) {
+    return storedLocale;
+  }
+
+  return toApiLocale(getCurrentLocale());
+};
+
 apiClient.interceptors.request.use((config) => {
   const token = getStoredToken();
-  const locale = getCurrentLocale();
+  const locale = getCurrentApiLocale();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  config.headers['Accept-Language'] = locale === 'kr' ? 'ko-KR,ko;q=0.9,en;q=0.8' : 'en-US,en;q=0.9';
+  config.headers['Accept-Language'] = locale === 'ko' ? 'ko-KR,ko;q=0.9,en;q=0.8' : 'en-US,en;q=0.9';
   config.headers['X-Locale'] = locale;
 
   return config;
@@ -64,6 +95,7 @@ const clearStoredSession = () => {
 
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  localStorage.removeItem(NOTIFICATION_LOCALE_STORAGE_KEY);
 };
 
 const OPTIONAL_401_PATH_PREFIXES = ['/user-details/notifications', '/user/notifications'];

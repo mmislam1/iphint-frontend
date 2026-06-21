@@ -6,7 +6,7 @@ import React, { startTransition, useCallback, useEffect, useMemo, useRef, useSta
 import { useLocale, useTranslations } from 'next-intl';
 import { AlertTriangle, Check, Crown } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
+import { apiClient, getApiErrorMessage, getApiPayloadMessages, getStoredNotificationLocale } from '@/lib/api';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { normalizeNotificationLocale } from '@/lib/notifications';
@@ -534,7 +534,9 @@ export default function BillingPage() {
   const activeCheckoutTransactionIdRef = useRef<string | null>(null);
 
   const isKoreanLocale = locale === 'kr';
-  const toastLocale = normalizeNotificationLocale(notificationPreferences.locale ?? locale);
+  const toastLocale = normalizeNotificationLocale(
+    notificationPreferences.locale ?? getStoredNotificationLocale() ?? locale,
+  );
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(isKoreanLocale ? 'ko-KR' : 'en-US', {

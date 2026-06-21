@@ -5,6 +5,7 @@ import { Menu, Bell, Check, Search, Trash2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
+import { getStoredNotificationLocale } from '@/lib/api';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
 	formatNotificationTimestamp,
@@ -75,7 +76,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 	const notificationPreferences = useAppSelector((state) => state.account.settings.notificationPreferences);
 	const settingsLoaded = useAppSelector((state) => state.account.settings.loaded);
 	const settingsLoading = useAppSelector((state) => state.account.settings.loading);
-	const notificationLocale = normalizeNotificationLocale(notificationPreferences.locale ?? locale);
+	const notificationLocale = normalizeNotificationLocale(
+		notificationPreferences.locale ?? getStoredNotificationLocale() ?? locale,
+	);
 	const menuRef = useRef<HTMLDivElement | null>(null);
 	const notificationQueryRef = useRef(notificationQuery);
 
