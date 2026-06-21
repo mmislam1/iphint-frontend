@@ -28,6 +28,12 @@ export interface BillingResourceLimits {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+export interface BillingWarning {
+  code: string;
+  message?: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 export interface BillingBrief {
   currentPlan?: {
     tier?: PlanTier | string;
@@ -46,6 +52,8 @@ export interface BillingBrief {
   } | null;
   renewal?: {
     autoRenew?: boolean;
+    canToggle?: boolean;
+    status?: 'on' | 'off' | string;
     endsAt?: string | null;
     renewsAt?: string | null;
   } | null;
@@ -53,11 +61,13 @@ export interface BillingBrief {
     tier?: PlanTier | string;
     name?: string;
     billingCycle?: BillingCycle;
+    effectiveAt?: string | null;
     chargeAt?: string | null;
     activatesAt?: string | null;
     price?: number | string | null;
     priceFormatted?: string | null;
   } | null;
+  warnings?: BillingWarning[];
 }
 
 export interface BillingSnapshot {
@@ -373,7 +383,7 @@ export const setAutoRenew = createAsyncThunk<
 
 export const upgradeSubscription = createAsyncThunk<
   BillingPageData,
-  { tier: PlanTier; billingCycle?: BillingCycle; effectiveFrom?: 'immediately' | 'next_billing_period' },
+  { tier: PlanTier; billingCycle: BillingCycle },
   { rejectValue: string }
 >('account/upgradeSubscription', async (payload, { dispatch, rejectWithValue }) => {
   try {

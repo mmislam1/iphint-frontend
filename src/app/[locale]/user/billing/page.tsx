@@ -16,6 +16,7 @@ import {
   upgradeSubscription,
   type BillingCycle,
   type BillingPlan as Plan,
+  type BillingResourceLimits,
   type BillingSnapshot,
   type PlanTier,
 } from '@/lib/store/slices/accountSlice';
@@ -48,8 +49,369 @@ interface NormalizedScheduledPlan {
   tier: PlanTier | null;
   name: string;
   billingCycle: BillingCycle;
+  effectiveAt: string | null;
   chargeAt: string | null;
   activatesAt: string | null;
+}
+
+type BillingTranslator = ReturnType<typeof useTranslations>;
+type FormatDate = (value?: string | null) => string;
+type GetCycleLabel = (value?: BillingCycle | null) => string;
+
+const formatLimit = (
+  value: number | string | boolean | null | undefined,
+  numberFormatter: Intl.NumberFormat,
+  unlimitedLabel: string,
+) => {
+  if (typeof value === 'boolean') return value ? unlimitedLabel : '0';
+  if (typeof value === 'number') return value > 0 ? numberFormatter.format(value) : unlimitedLabel;
+  if (typeof value === 'string' && value.trim()) return value;
+  return unlimitedLabel;
+};
+
+function PlanSummary({
+  t,
+  currentPlanName,
+  currentBillingCycle,
+  currentPlanPrice,
+  hasEffectivePlan,
+  isTrial,
+  resourceLimits,
+  searchUsage,
+  creditUsagePercent,
+  formatDate,
+  getCycleLabel,
+  numberFormatter,
+  trialDaysLeft,
+  trialEndsAt,
+}: {
+  t: BillingTranslator;
+  currentPlanName: string;
+  currentBillingCycle: BillingCycle;
+  currentPlanPrice: string;
+  hasEffectivePlan: boolean;
+  isTrial: boolean;
+  resourceLimits: BillingResourceLimits | null;
+  searchUsage: { used: number; limit: number };
+  creditUsagePercent: number;
+  formatDate: FormatDate;
+  getCycleLabel: GetCycleLabel;
+  numberFormatter: Intl.NumberFormat;
+  trialDaysLeft: number | null;
+  trialEndsAt: string | null;
+}) {
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('planSummaryTitle')}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h2 className="break-words text-lg font-semibold text-gray-900">{t('currentPlanLabel', { name: currentPlanName })}</h2>
+            {isTrial && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                <Crown className="h-3 w-3" />
+                {t('proTrialBadge')}
+              </span>
+            )}
+          </div>
+          {hasEffectivePlan ? (
+            <p className="mt-1 text-sm text-gray-500">
+              {getCycleLabel(currentBillingCycle)} / {currentPlanPrice}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-gray-500">{t('noActivePlan')}</p>
+          )}
+        </div>
+
+        {isTrial && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            {trialDaysLeft != null
+              ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
+              : trialEndsAt
+                ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
+                : t('trialActive')}
+          </div>
+        )}
+      </div>
+
+      {hasEffectivePlan && (
+        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-4">
+          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('uploadsUsed')}</p>
+            <p className="mt-1 text-xl font-semibold leading-none text-gray-900">{numberFormatter.format(searchUsage.used)}</p>
+            {searchUsage.limit > 0 && (
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                <div className="h-full rounded-full bg-gray-900 transition-all" style={{ width: `${creditUsagePercent}%` }} />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('imageUploads')}</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {formatLimit(resourceLimits?.imageUploadLimit, numberFormatter, t('unlimited'))}
+            </p>
+          </div>
+          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('alerts')}</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {formatLimit(resourceLimits?.alertLimit, numberFormatter, t('unlimited'))}
+            </p>
+          </div>
+          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('pdfReports')}</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {resourceLimits?.pdfEnabled ? t('included') : t('notIncluded')}
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ScheduleSummary({
+  t,
+  scheduledPlan,
+  formatDate,
+  getCycleLabel,
+}: {
+  t: BillingTranslator;
+  scheduledPlan: NormalizedScheduledPlan | null;
+  formatDate: FormatDate;
+  getCycleLabel: GetCycleLabel;
+}) {
+  if (!scheduledPlan) return null;
+
+  return (
+    <section className="rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sky-950 shadow-sm sm:p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">{t('scheduledPlanTitle')}</p>
+      <h2 className="mt-2 text-lg font-semibold">
+        {scheduledPlan.name} / {getCycleLabel(scheduledPlan.billingCycle)}
+      </h2>
+      <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
+        <p>{t('scheduledPlanEffectiveAt', { date: formatDate(scheduledPlan.effectiveAt) })}</p>
+        <p>{t('scheduledPlanChargeAt', { date: formatDate(scheduledPlan.chargeAt) })}</p>
+        <p>{t('scheduledPlanActivatesAt', { date: formatDate(scheduledPlan.activatesAt) })}</p>
+      </div>
+    </section>
+  );
+}
+
+function RenewalControl({
+  t,
+  autoRenewEnabled,
+  autoRenewLoading,
+  canToggleAutoRenew,
+  renewalEndsAt,
+  renewalRenewsAt,
+  formatDate,
+  onToggle,
+}: {
+  t: BillingTranslator;
+  autoRenewEnabled: boolean;
+  autoRenewLoading: boolean;
+  canToggleAutoRenew: boolean;
+  renewalEndsAt: string | null;
+  renewalRenewsAt: string | null;
+  formatDate: FormatDate;
+  onToggle: (enabled: boolean) => void;
+}) {
+  const renewalDetail =
+    !canToggleAutoRenew && !renewalEndsAt && !renewalRenewsAt
+      ? t('subscribeToPaidPlan')
+      : autoRenewEnabled
+        ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
+        : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) });
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('renewalControlTitle')}</p>
+          <h2 className="mt-2 text-lg font-semibold text-gray-900">
+            {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">{renewalDetail}</p>
+        </div>
+
+        <div className="grid w-full grid-cols-2 rounded-lg border border-gray-300 bg-white p-1 md:w-auto">
+          <button
+            type="button"
+            onClick={() => onToggle(true)}
+            disabled={!canToggleAutoRenew || autoRenewLoading || autoRenewEnabled}
+            className={[
+              'rounded-md px-4 py-2 text-center text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+              autoRenewEnabled ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
+            ].join(' ')}
+          >
+            {autoRenewLoading && !autoRenewEnabled ? t('processing') : t('on')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggle(false)}
+            disabled={!canToggleAutoRenew || autoRenewLoading || !autoRenewEnabled}
+            className={[
+              'rounded-md px-4 py-2 text-center text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+              !autoRenewEnabled ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
+            ].join(' ')}
+          >
+            {autoRenewLoading && autoRenewEnabled ? t('processing') : t('off')}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PlanPicker({
+  t,
+  plans,
+  cycle,
+  currentTier,
+  currentBillingCycle,
+  checkoutPlan,
+  savingPlan,
+  upgradeLoading,
+  hasExistingPaddleSubscription,
+  hasScheduledPlan,
+  visibleScheduledPlan,
+  isTrial,
+  trialDaysLeft,
+  formatPrice,
+  getLocalizedPlanFeatures,
+  getPlanCtaLabel,
+  handlePlanAction,
+  setCycle,
+}: {
+  t: BillingTranslator;
+  plans: Plan[];
+  cycle: BillingCycle;
+  currentTier: PlanTier | null;
+  currentBillingCycle: BillingCycle;
+  checkoutPlan: PlanTier | null;
+  savingPlan: PlanTier | null;
+  upgradeLoading: PlanTier | null;
+  hasExistingPaddleSubscription: boolean;
+  hasScheduledPlan: boolean;
+  visibleScheduledPlan: NormalizedScheduledPlan | null;
+  isTrial: boolean;
+  trialDaysLeft: number | null;
+  formatPrice: (value: number) => string;
+  getLocalizedPlanFeatures: (plan: Plan) => string[];
+  getPlanCtaLabel: (planTier: PlanTier, isWorking: boolean, isPendingTargetPlan: boolean) => string;
+  handlePlanAction: (tier: PlanTier) => void;
+  setCycle: (cycle: BillingCycle) => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('planPickerTitle')}</p>
+          <h2 className="mt-1 text-lg font-semibold text-gray-900">{t('planPickerDescription')}</h2>
+        </div>
+        <div className="grid w-full grid-cols-2 rounded-lg border border-gray-300 bg-white p-1 sm:inline-flex sm:w-auto sm:grid-cols-none">
+          <button
+            type="button"
+            onClick={() => setCycle('monthly')}
+            className={[
+              'rounded-md px-3 py-1.5 text-center text-xs font-medium transition-colors',
+              cycle === 'monthly' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
+            ].join(' ')}
+          >
+            {t('monthly')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCycle('annual')}
+            className={[
+              'rounded-md px-3 py-1.5 text-center text-xs font-medium transition-colors',
+              cycle === 'annual' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
+            ].join(' ')}
+          >
+            {t('annual')}
+          </button>
+        </div>
+      </div>
+
+      <div id="plan-cards" className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        {plans.map((plan) => {
+          const price = cycle === 'annual' ? plan.pricing.annual : plan.pricing.monthly;
+          const isCurrent = currentTier ? plan.tier === currentTier : false;
+          const isCurrentPaidPlan = isCurrent && hasExistingPaddleSubscription;
+          const isCurrentSelectedCycle = currentBillingCycle === cycle;
+          const isPendingTargetPlan =
+            !!visibleScheduledPlan &&
+            visibleScheduledPlan.tier === plan.tier &&
+            visibleScheduledPlan.billingCycle === cycle;
+          const isWorking = savingPlan === plan.tier || checkoutPlan === plan.tier || upgradeLoading === plan.tier;
+          const isDisabled = isWorking || isPendingTargetPlan || (isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan);
+          const planButtonClass = [
+            'mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+            isCurrentPaidPlan && isCurrentSelectedCycle
+              ? 'border border-gray-200 bg-gray-200 text-gray-500'
+              : 'bg-gray-900 text-white hover:bg-gray-800',
+          ].join(' ');
+
+          return (
+            <div
+              key={plan.tier}
+              className={[
+                'relative rounded-2xl border bg-white p-5 shadow-sm',
+                isCurrent ? 'border-gray-900 ring-1 ring-gray-900/10' : 'border-gray-200',
+              ].join(' ')}
+            >
+              {isCurrent && isTrial && (
+                <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                  <Crown className="h-3 w-3" />
+                  {t('proTrialBadge')}
+                </span>
+              )}
+
+              <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+              <p className="mt-2 text-2xl font-bold text-gray-900">{formatPrice(price)}</p>
+              <p className="text-xs text-gray-500">
+                {t('perMonth')} ({cycle === 'annual' ? t('billedAnnually') : t('billedMonthly')})
+              </p>
+
+              {isCurrent && isTrial && (
+                <p className="mt-2 text-xs font-medium text-gray-700">
+                  {trialDaysLeft != null
+                    ? t('trialDaysLeftCard', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
+                    : t('trialActiveCard')}
+                </p>
+              )}
+
+              {!hasExistingPaddleSubscription && (
+                <p className="mt-2 text-xs text-gray-500">
+                  {t('autoPayStarts', { cycle: cycle === 'annual' ? t('yearly') : t('monthly') })}
+                </p>
+              )}
+
+              <div className="mt-4 space-y-2 text-sm text-gray-700">
+                {getLocalizedPlanFeatures(plan).map((feature) => (
+                  <p key={feature} className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
+                    <span>{feature}</span>
+                  </p>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                disabled={isDisabled}
+                onClick={() => handlePlanAction(plan.tier)}
+                className={planButtonClass}
+              >
+                {isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan
+                  ? t('currentPlanButton')
+                  : getPlanCtaLabel(plan.tier, isWorking, isPendingTargetPlan)}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 const planTiers: PlanTier[] = ['starter', 'pro', 'premium'];
@@ -274,7 +636,26 @@ export default function BillingPage() {
   const renewalRenewsAt = brief?.renewal?.renewsAt ?? currentSubscription?.nextBillingDate ?? null;
   const isAutoRenewOff = isPaidSubscription && !autoRenewEnabled;
   const hasExistingPaddleSubscription = isPaidSubscription && !isTrial;
-  const canToggleAutoRenew = isPaidSubscription && hasEffectivePlan;
+  const canToggleAutoRenew =
+    typeof brief?.renewal?.canToggle === 'boolean'
+      ? brief.renewal.canToggle
+      : isPaidSubscription && hasEffectivePlan;
+  const currentResourceLimits: BillingResourceLimits | null =
+    briefCurrentPlan?.resourceLimits ??
+    briefCurrentPlan?.limits ??
+    (snapshot?.usage
+      ? {
+          imageUploadLimit: snapshot.usage.imageUploadLimit,
+          alertLimit: snapshot.usage.alertLimit,
+          pdfEnabled: snapshot.usage.pdfEnabled,
+        }
+      : currentPlanFromCatalog
+        ? {
+            imageUploadLimit: currentPlanFromCatalog.imageUploadLimit,
+            alertLimit: currentPlanFromCatalog.alertLimit,
+            pdfEnabled: currentPlanFromCatalog.pdfEnabled,
+          }
+        : null);
 
   const scheduledPlan = useMemo<NormalizedScheduledPlan | null>(() => {
     const scheduled = brief?.scheduledPlan;
@@ -283,6 +664,7 @@ export default function BillingPage() {
         tier: isPlanTier(scheduled.tier) ? scheduled.tier : null,
         name: scheduled.name || String(scheduled.tier ?? ''),
         billingCycle: scheduled.billingCycle ?? currentBillingCycle,
+        effectiveAt: scheduled.effectiveAt ?? null,
         chargeAt: scheduled.chargeAt ?? null,
         activatesAt: scheduled.activatesAt ?? null,
       };
@@ -295,11 +677,12 @@ export default function BillingPage() {
       tier: pendingPlan.tier,
       name: pendingPlan.name,
       billingCycle: pendingPlan.billingCycle,
+      effectiveAt: pendingPlan.effectiveAt ?? null,
       chargeAt: null,
       activatesAt: pendingPlan.effectiveAt ?? null,
     };
   }, [brief?.scheduledPlan, currentBillingCycle, currentSubscription?.pendingPlan]);
-  const visibleScheduledPlan = isAutoRenewOff ? null : scheduledPlan;
+  const visibleScheduledPlan = scheduledPlan;
   const hasScheduledPlan = !!visibleScheduledPlan;
 
   const currentPlanPrice = useMemo(() => {
@@ -404,7 +787,6 @@ export default function BillingPage() {
         upgradeSubscription({
           tier,
           billingCycle,
-          effectiveFrom: 'next_billing_period',
         }),
       ).unwrap();
 
@@ -651,7 +1033,7 @@ export default function BillingPage() {
       const cancelScheduledChange = Boolean(hasScheduledPlan && currentTier && tier === currentTier);
       const targetTier = cancelScheduledChange && currentTier ? currentTier : tier;
       const targetCycle = cancelScheduledChange ? currentBillingCycle : cycle;
-      await schedulePlanChange(targetTier, targetCycle);
+      await schedulePlanChange(targetTier, targetCycle, { cancelScheduledChange });
       return;
     }
 
@@ -840,189 +1222,61 @@ export default function BillingPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 lg:flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="break-words text-base font-semibold text-gray-900">{t('currentPlanLabel', { name: currentPlanName })}</p>
-              {isTrial && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
-                  <Crown className="h-3 w-3" />
-                  {t('proTrialBadge')}
-                </span>
-              )}
-            </div>
+      <PlanSummary
+        t={t}
+        currentPlanName={currentPlanName}
+        currentBillingCycle={currentBillingCycle}
+        currentPlanPrice={currentPlanPrice}
+        hasEffectivePlan={hasEffectivePlan}
+        isTrial={isTrial}
+        resourceLimits={currentResourceLimits}
+        searchUsage={searchUsage}
+        creditUsagePercent={creditUsagePercent}
+        formatDate={formatDate}
+        getCycleLabel={getCycleLabel}
+        numberFormatter={numberFormatter}
+        trialDaysLeft={trialDaysLeft}
+        trialEndsAt={trialEndsAt}
+      />
 
-            {hasEffectivePlan ? (
-              <p className="mt-1 text-xs text-gray-500">
-                {getCycleLabel(currentBillingCycle)} / {currentPlanPrice}
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-gray-500">{t('noActivePlan')}</p>
-            )}
+      <ScheduleSummary
+        t={t}
+        scheduledPlan={visibleScheduledPlan}
+        formatDate={formatDate}
+        getCycleLabel={getCycleLabel}
+      />
 
-            {hasEffectivePlan && (
-              <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
-                <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('uploadsUsed')}</p>
-                  <p className="mt-1 text-xl font-semibold leading-none text-gray-900">{numberFormatter.format(searchUsage.used)}</p>
-                  {searchUsage.limit > 0 && (
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                      <div
-                        className="h-full rounded-full bg-gray-900 transition-all"
-                        style={{ width: `${creditUsagePercent}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
+      <RenewalControl
+        t={t}
+        autoRenewEnabled={autoRenewEnabled}
+        autoRenewLoading={autoRenewLoading}
+        canToggleAutoRenew={canToggleAutoRenew}
+        renewalEndsAt={renewalEndsAt}
+        renewalRenewsAt={renewalRenewsAt}
+        formatDate={formatDate}
+        onToggle={handleAutoRenewToggle}
+      />
 
-                <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                    {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-gray-900">
-                    {autoRenewEnabled
-                      ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
-                      : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) })}
-                  </p>
-                </div>
-
-                <div className="min-w-0 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2.5 text-sky-900">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">{t('scheduledPlanTitle')}</p>
-                  <p className="mt-1 text-sm font-semibold">
-                    {visibleScheduledPlan ? `${visibleScheduledPlan.name} / ${getCycleLabel(visibleScheduledPlan.billingCycle)}` : '--'}
-                  </p>
-                  {visibleScheduledPlan && (
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-sky-800">
-                      <span>{t('scheduledPlanChargeAt', { date: formatDate(visibleScheduledPlan.chargeAt) })}</span>
-                      <span>{t('scheduledPlanActivatesAt', { date: formatDate(visibleScheduledPlan.activatesAt) })}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-          </div>
-
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-            <div className="grid w-full grid-cols-2 rounded-lg border border-gray-300 bg-white p-1 sm:inline-flex sm:w-auto sm:grid-cols-none">
-              <button
-                type="button"
-                onClick={() => setCycle('monthly')}
-                className={[
-                  'rounded-md px-3 py-1.5 text-center text-xs font-medium transition-colors',
-                  cycle === 'monthly' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
-                ].join(' ')}
-              >
-                {t('monthly')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCycle('annual')}
-                className={[
-                  'rounded-md px-3 py-1.5 text-center text-xs font-medium transition-colors',
-                  cycle === 'annual' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100',
-                ].join(' ')}
-              >
-                {t('annual')}
-              </button>
-            </div>
-
-            {canToggleAutoRenew && (
-              <button
-                type="button"
-                onClick={() => handleAutoRenewToggle(!autoRenewEnabled)}
-                disabled={autoRenewLoading}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 sm:w-auto"
-              >
-                {autoRenewLoading
-                  ? t('processing')
-                  : autoRenewEnabled
-                    ? t('turnRenewalOff')
-                    : t('turnRenewalOn')}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div id="plan-cards" className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        {plans.map((plan) => {
-          const price = cycle === 'annual' ? plan.pricing.annual : plan.pricing.monthly;
-          const isCurrent = currentTier ? plan.tier === currentTier : false;
-          const isCurrentPaidPlan = isCurrent && hasExistingPaddleSubscription;
-          const isCurrentSelectedCycle = currentBillingCycle === cycle;
-          const isPendingTargetPlan =
-            !!visibleScheduledPlan &&
-            visibleScheduledPlan.tier === plan.tier &&
-            visibleScheduledPlan.billingCycle === cycle;
-          const isWorking = savingPlan === plan.tier || checkoutPlan === plan.tier || upgradeLoading === plan.tier;
-          const isDisabled = isWorking || isPendingTargetPlan || (isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan);
-          const planButtonClass = [
-            'mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-            isCurrentPaidPlan && isCurrentSelectedCycle
-              ? 'border border-gray-200 bg-gray-200 text-gray-500'
-              : 'bg-gray-900 text-white hover:bg-gray-800',
-          ].join(' ');
-
-          return (
-            <div
-              key={plan.tier}
-              className={[
-                'relative rounded-2xl border bg-white p-5 shadow-sm',
-                isCurrent ? 'border-gray-900 ring-1 ring-gray-900/10' : 'border-gray-200',
-              ].join(' ')}
-            >
-              {isCurrent && isTrial && (
-                <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
-                  <Crown className="h-3 w-3" />
-                  {t('proTrialBadge')}
-                </span>
-              )}
-
-              <h2 className="text-lg font-semibold text-gray-900">{plan.name}</h2>
-              <p className="mt-2 text-2xl font-bold text-gray-900">{formatPrice(price)}</p>
-              <p className="text-xs text-gray-500">
-                {t('perMonth')} ({cycle === 'annual' ? t('billedAnnually') : t('billedMonthly')})
-              </p>
-
-              {isCurrent && isTrial && (
-                <p className="mt-2 text-xs font-medium text-gray-700">
-                  {trialDaysLeft != null
-                    ? t('trialDaysLeftCard', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
-                    : t('trialActiveCard')}
-                </p>
-              )}
-
-              {!hasExistingPaddleSubscription && (
-                <p className="mt-2 text-xs text-gray-500">
-                  {t('autoPayStarts', { cycle: cycle === 'annual' ? t('yearly') : t('monthly') })}
-                </p>
-              )}
-
-              <div className="mt-4 space-y-2 text-sm text-gray-700">
-                {getLocalizedPlanFeatures(plan).map((feature) => (
-                  <p key={feature} className="flex items-start gap-2">
-                    <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
-                    <span>{feature}</span>
-                  </p>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                disabled={isDisabled}
-                onClick={() => handlePlanAction(plan.tier)}
-                className={planButtonClass}
-              >
-                {isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan
-                  ? t('currentPlanButton')
-                  : getPlanCtaLabel(plan.tier, isWorking, isPendingTargetPlan)}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <PlanPicker
+        t={t}
+        plans={plans}
+        cycle={cycle}
+        currentTier={currentTier}
+        currentBillingCycle={currentBillingCycle}
+        checkoutPlan={checkoutPlan}
+        savingPlan={savingPlan}
+        upgradeLoading={upgradeLoading}
+        hasExistingPaddleSubscription={hasExistingPaddleSubscription}
+        hasScheduledPlan={hasScheduledPlan}
+        visibleScheduledPlan={visibleScheduledPlan}
+        isTrial={isTrial}
+        trialDaysLeft={trialDaysLeft}
+        formatPrice={formatPrice}
+        getLocalizedPlanFeatures={getLocalizedPlanFeatures}
+        getPlanCtaLabel={getPlanCtaLabel}
+        handlePlanAction={handlePlanAction}
+        setCycle={setCycle}
+      />
 
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

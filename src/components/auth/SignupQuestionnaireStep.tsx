@@ -106,7 +106,10 @@ function SelectField({
           name={field.name}
           value={value}
           onChange={(event) => onChange(field.name, event.target.value)}
-          className="input-field pr-12 typo-b2-r"
+          className={[
+            'input-field cursor-pointer pr-12 typo-t6',
+            value ? 'text-black' : 'text-tx-6',
+          ].join(' ')}
         >
           <option value="" disabled>
             {placeholder}
@@ -206,14 +209,14 @@ export default function SignupQuestionnaireStep() {
       <main className="flex min-h-dvh flex-col px-5 py-8 sm:px-8 sm:py-10 lg:px-12 xl:px-16">
         <form onSubmit={handleSubmit} className="mx-auto flex w-full max-w-[980px] flex-1 flex-col">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="typo-t2 text-black">{t('title')}</h1>
-            <span className="typo-button-s rounded-full bg-black px-3 py-1 text-white">
+            <h1 className="typo-t3 text-black">{t('title')}</h1>
+            <span className="typo-t6 rounded-full bg-black px-3 py-1 text-white">
               {t('progress')}
             </span>
           </div>
 
           <div className="mt-8 rounded-[12px] bg-[#f5f5f5] px-5 py-6 sm:px-7">
-            <p className="typo-t5 text-black">{t('intro')}</p>
+            <p className="typo-t6-r text-black">{t('intro')}</p>
           </div>
 
           <div className="mt-9 grid grid-cols-1 gap-x-8 gap-y-7 lg:grid-cols-2">
@@ -242,7 +245,7 @@ export default function SignupQuestionnaireStep() {
             <button
               type="button"
               onClick={handleSkip}
-              className="typo-text-button-l inline-flex items-center gap-1 border-b border-black pb-0.5 text-black transition-colors hover:text-gray-600"
+              className="typo-t6 inline-flex items-center gap-1 border-b border-black pb-0.5 text-black transition-colors hover:text-gray-600"
             >
               {t('skip')}
               <ChevronRight aria-hidden="true" size={18} strokeWidth={2} />
