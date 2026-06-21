@@ -200,10 +200,10 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 		item?: NotificationItem,
 		field: 'title' | 'message' = 'message',
 	) => {
-		const localized = localizeStoredNotificationText(value, locale, item, field);
+		const localized = localizeStoredNotificationText(value, notificationLocale, item, field);
 		if (localized !== value) return localized;
 
-		if (!value || locale !== 'kr') return value;
+		if (!value || notificationLocale !== 'ko') return value;
 
 		const normalized = value.trim();
 
@@ -297,7 +297,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 													>
 														<p className="line-clamp-1 text-xs font-semibold text-gray-900">{localizeNotificationText(item.title, item, 'title')}</p>
 														{item.message && <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{localizeNotificationText(item.message, item, 'message')}</p>}
-														<p className="mt-1 text-[10px] text-gray-400">{formatNotificationTimestamp(item.timestamp, locale)}</p>
+														<p className="mt-1 text-[10px] text-gray-400">{formatNotificationTimestamp(item.timestamp, notificationLocale)}</p>
 													</button>
 
 													<div className="flex items-center gap-1">

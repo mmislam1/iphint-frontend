@@ -740,14 +740,14 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
-                      {localizeNotificationText(item.title, locale, item, 'title')}
+                      {localizeNotificationText(item.title, selectedNotificationLocale, item, 'title')}
                     </p>
                     {item.message && (
                       <p className="mt-1 text-sm text-gray-600">
-                        {localizeNotificationText(item.message, locale, item, 'message')}
+                        {localizeNotificationText(item.message, selectedNotificationLocale, item, 'message')}
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-gray-400">{formatNotificationTimestamp(item.timestamp, locale)}</p>
+                    <p className="mt-2 text-xs text-gray-400">{formatNotificationTimestamp(item.timestamp, selectedNotificationLocale)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 self-center">
                     {!item.isRead && (
