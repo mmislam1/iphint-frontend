@@ -355,27 +355,20 @@ const userSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.authLoading = false;
         state.authError = null;
-        const { token, data, message } = action.payload;
+        const { message } = action.payload;
 
-        if (token && data) {
-          saveSession(token, data);
-          state.authNotice = null;
-          state.token = token;
-          state.isAuthenticated = true;
-          state.id = data.id;
-          state.name = data.name;
-          state.email = data.email;
-          state.role = data.role;
-          state.credits = data.credits;
-          state.referralCode = data.referralCode;
-          state.referralCount = data.referralCount;
-          return;
-        }
-
-        // Verification-required registration flow: no active session yet.
-        state.authNotice = message ?? 'Registration successful. Please verify your email before logging in.';
+        // New accounts must verify email before an active session is created.
+        clearSession();
+        state.authNotice = message || 'Registration successful. Please verify your email before logging in.';
         state.token = null;
         state.isAuthenticated = false;
+        state.id = null;
+        state.name = null;
+        state.email = null;
+        state.role = null;
+        state.credits = 0;
+        state.referralCode = null;
+        state.referralCount = 0;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.authLoading = false;

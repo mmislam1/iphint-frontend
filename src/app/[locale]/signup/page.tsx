@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
@@ -28,9 +28,10 @@ function SignupForm() {
   const router = useRouter();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authLoading = useSelector(selectAuthLoading);
+  const verificationRedirectRef = useRef(false);
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
+    if (!authLoading && isAuthenticated && !verificationRedirectRef.current) {
       router.push('/user');
     }
   }, [isAuthenticated, authLoading, router]);
@@ -169,16 +170,18 @@ function SignupForm() {
       ...(questionnairePayload ? { questionnaire: questionnairePayload } : {}),
     };
 
+    verificationRedirectRef.current = true;
     const action = await dispatch(registerUser(submitData));
     if (registerUser.fulfilled.match(action)) {
       dispatch(clearSignupQuestionnaire());
 
-      if (!action.payload.token) {
-        const noticeMessage = action.payload.message || '';
-        const target = `/signup/verification-request?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(noticeMessage)}`;
-        router.push(target);
-      }
+      const noticeMessage = action.payload.message || '';
+      const target = `/signup/verification-request?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(noticeMessage)}`;
+      router.push(target);
+      return;
     }
+
+    verificationRedirectRef.current = false;
   };
 
   const uniqueDialCodes = Array.from(new Set(countries.map((c) => c.dial)))
