@@ -6,6 +6,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { useRouter } from '@/i18n/routing';
 import {
+  formatNotificationTimestamp,
+  localizeNotificationText,
+  type LocalizableNotification,
+} from '@/lib/notifications';
+import {
   setFontSize,
   FONT_SIZE_LABELS,
   type FontSizeKey,
@@ -44,7 +49,7 @@ interface SettingsNotifications {
   summaryFrequency: SummaryFrequency;
 }
 
-interface NotificationItem {
+interface NotificationItem extends LocalizableNotification {
   _id: string;
   title: string;
   message?: string;
@@ -696,9 +701,15 @@ export default function SettingsPage() {
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{item.title}</p>
-                    {item.message && <p className="mt-1 text-sm text-gray-600">{item.message}</p>}
-                    <p className="mt-2 text-xs text-gray-400">{new Date(item.timestamp).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {localizeNotificationText(item.title, locale, item, 'title')}
+                    </p>
+                    {item.message && (
+                      <p className="mt-1 text-sm text-gray-600">
+                        {localizeNotificationText(item.message, locale, item, 'message')}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-gray-400">{formatNotificationTimestamp(item.timestamp, locale)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 self-center">
                     {!item.isRead && (

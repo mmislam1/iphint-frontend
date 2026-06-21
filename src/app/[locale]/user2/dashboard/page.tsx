@@ -8,6 +8,10 @@ import { fetchDashboardData, fetchAlerts } from '@/lib/store/slices/userSlice';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { NewScanBanner } from '@/components/dashboard/NewScanBanner';
 import { generateReferralWindow } from '@/lib/store/slices/accountSlice';
+import {
+  formatNotificationTimestamp,
+  localizeNotificationText as localizeStoredNotificationText,
+} from '@/lib/notifications';
 import { 
   CheckCircle2, 
   ChevronRight, 
@@ -22,7 +26,10 @@ export default function DashboardPage() {
   const locale = useLocale();
   const dispatch = useAppDispatch();
 
-  const localizeNotificationText = (value: string) => {
+  const localizeNotificationText = (value: string, alert?: { title: string; timestamp: string }) => {
+    const localized = localizeStoredNotificationText(value, locale, alert, 'title');
+    if (localized !== value) return localized ?? value;
+
     if (!value || locale !== 'kr') return value;
 
     const normalized = value.trim();
@@ -238,9 +245,9 @@ export default function DashboardPage() {
                       {index === 0 ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold leading-snug text-gray-900" title={localizeNotificationText(alert.title)}>{localizeNotificationText(alert.title)}</p>
-                      <p className="mt-1 truncate text-[10px] font-medium text-gray-400" title={new Date(alert.timestamp).toLocaleString()}>
-                        {new Date(alert.timestamp).toLocaleString()}
+                      <p className="truncate text-sm font-bold leading-snug text-gray-900" title={localizeNotificationText(alert.title, alert)}>{localizeNotificationText(alert.title, alert)}</p>
+                      <p className="mt-1 truncate text-[10px] font-medium text-gray-400" title={formatNotificationTimestamp(alert.timestamp, locale)}>
+                        {formatNotificationTimestamp(alert.timestamp, locale)}
                       </p>
                     </div>
                   </div>

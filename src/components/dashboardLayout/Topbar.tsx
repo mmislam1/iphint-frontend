@@ -7,13 +7,18 @@ import { usePathname, useRouter } from '@/i18n/routing';
 import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
+	formatNotificationTimestamp,
+	localizeNotificationText as localizeStoredNotificationText,
+	type LocalizableNotification,
+} from '@/lib/notifications';
+import {
 	fetchNotifications,
 	markAllNotificationsRead,
 	markNotificationRead,
 	deleteNotification,
 } from '@/lib/store/slices/accountSlice';
 
-interface NotificationItem {
+interface NotificationItem extends LocalizableNotification {
 	_id: string;
 	title: string;
 	message?: string;
@@ -171,7 +176,14 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 		}
 	};
 
-	const localizeNotificationText = (value?: string) => {
+	const localizeNotificationText = (
+		value?: string,
+		item?: NotificationItem,
+		field: 'title' | 'message' = 'message',
+	) => {
+		const localized = localizeStoredNotificationText(value, locale, item, field);
+		if (localized !== value) return localized;
+
 		if (!value || locale !== 'kr') return value;
 
 		const normalized = value.trim();
@@ -264,9 +276,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 														onClick={() => goToNotification(item)}
 														className="min-w-0 flex-1 cursor-pointer text-left"
 													>
-														<p className="line-clamp-1 text-xs font-semibold text-gray-900">{localizeNotificationText(item.title)}</p>
-														{item.message && <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{localizeNotificationText(item.message)}</p>}
-														<p className="mt-1 text-[10px] text-gray-400">{new Date(item.timestamp).toLocaleString()}</p>
+														<p className="line-clamp-1 text-xs font-semibold text-gray-900">{localizeNotificationText(item.title, item, 'title')}</p>
+														{item.message && <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{localizeNotificationText(item.message, item, 'message')}</p>}
+														<p className="mt-1 text-[10px] text-gray-400">{formatNotificationTimestamp(item.timestamp, locale)}</p>
 													</button>
 
 													<div className="flex items-center gap-1">

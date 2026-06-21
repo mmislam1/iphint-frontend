@@ -30,20 +30,32 @@ const getStoredToken = () => {
   return localStorage.getItem('token');
 };
 
+const parseLocaleFromPathname = (pathname: string) => {
+  const segment = pathname.split('/').filter(Boolean)[0];
+  return segment === 'kr' ? 'kr' : 'en';
+};
+
+const getCurrentLocale = () => {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+
+  return parseLocaleFromPathname(window.location.pathname || '/');
+};
+
 apiClient.interceptors.request.use((config) => {
   const token = getStoredToken();
+  const locale = getCurrentLocale();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  config.headers['Accept-Language'] = locale === 'kr' ? 'ko-KR,ko;q=0.9,en;q=0.8' : 'en-US,en;q=0.9';
+  config.headers['X-Locale'] = locale;
+
   return config;
 });
-
-const parseLocaleFromPathname = (pathname: string) => {
-  const segment = pathname.split('/').filter(Boolean)[0];
-  return segment === 'kr' ? 'kr' : 'en';
-};
 
 const clearStoredSession = () => {
   if (typeof window === 'undefined') {
