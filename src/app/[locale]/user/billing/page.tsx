@@ -65,6 +65,7 @@ function PlanSummary({
   hasEffectivePlan,
   isTrial,
   creditsRemaining,
+  creditsProgressPercent,
   scheduledPlan,
   formatDate,
   getCycleLabel,
@@ -85,6 +86,7 @@ function PlanSummary({
   hasEffectivePlan: boolean;
   isTrial: boolean;
   creditsRemaining: number | null;
+  creditsProgressPercent: number;
   scheduledPlan: NormalizedScheduledPlan | null;
   formatDate: FormatDate;
   getCycleLabel: GetCycleLabel;
@@ -106,8 +108,8 @@ function PlanSummary({
         : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) });
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="border-y border-gray-200 py-4 sm:py-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('planSummaryTitle')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -128,56 +130,62 @@ function PlanSummary({
           )}
         </div>
 
-        {isTrial && (
-          <div className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:w-auto">
-            {trialDaysLeft != null
-              ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
-              : trialEndsAt
-                ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
-                : t('trialActive')}
-          </div>
-        )}
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+          {canToggleAutoRenew && (
+            <button
+              type="button"
+              onClick={() => onAutoRenewToggle(!autoRenewEnabled)}
+              disabled={autoRenewLoading}
+              className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {autoRenewLoading
+                ? t('processing')
+                : autoRenewEnabled
+                  ? t('turnRenewalOff')
+                  : t('turnRenewalOn')}
+            </button>
+          )}
+          {isTrial && (
+            <div className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:w-auto">
+              {trialDaysLeft != null
+                ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
+                : trialEndsAt
+                  ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
+                  : t('trialActive')}
+            </div>
+          )}
+        </div>
       </div>
 
       {hasEffectivePlan && (
-        <div className={['mt-4 grid grid-cols-1 gap-2', scheduledPlan ? 'md:grid-cols-3' : 'md:grid-cols-2'].join(' ')}>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+        <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('creditsRemaining')}</p>
             <p className="mt-1 text-xl font-semibold leading-none text-gray-900">
               {creditsRemaining == null ? t('unlimited') : numberFormatter.format(creditsRemaining)}
             </p>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200" aria-hidden="true">
+              <div
+                className="h-full rounded-full bg-gray-900 transition-all"
+                style={{ width: `${creditsProgressPercent}%` }}
+              />
+            </div>
           </div>
 
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
-              </p>
-              {canToggleAutoRenew && (
-                <button
-                  type="button"
-                  onClick={() => onAutoRenewToggle(!autoRenewEnabled)}
-                  disabled={autoRenewLoading}
-                  className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {autoRenewLoading
-                    ? t('processing')
-                    : autoRenewEnabled
-                      ? t('turnRenewalOff')
-                      : t('turnRenewalOn')}
-                </button>
-              )}
-            </div>
+          <div className="min-w-0 border-t border-gray-200 pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
+            </p>
             <p className="mt-1 text-sm font-medium text-gray-900">{renewalDetail}</p>
           </div>
 
           {scheduledPlan && (
-            <div className="min-w-0 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2.5 text-sky-900">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">{t('scheduledPlanTitle')}</p>
+            <div className="min-w-0 border-t border-gray-200 pt-4 md:col-span-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('scheduledPlanTitle')}</p>
               <p className="mt-1 text-sm font-semibold">
                 {scheduledPlan.name} / {getCycleLabel(scheduledPlan.billingCycle)}
               </p>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-sky-800">
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
                 <span>{t('scheduledPlanChargeAt', { date: formatDate(scheduledPlan.chargeAt) })}</span>
                 <span>{t('scheduledPlanActivatesAt', { date: formatDate(scheduledPlan.activatesAt) })}</span>
               </div>
@@ -616,6 +624,16 @@ export default function BillingPage() {
     const safeUsed = Number.isFinite(used) ? Math.max(0, used) : 0;
     return Math.max(0, limit - safeUsed);
   }, [snapshot]);
+  const creditsTotal = useMemo(() => {
+    const limit = Number(snapshot?.usage?.imageUploadLimit ?? currentPlanFromCatalog?.imageUploadLimit ?? 0);
+    return Number.isFinite(limit) ? Math.max(0, limit) : 0;
+  }, [currentPlanFromCatalog?.imageUploadLimit, snapshot?.usage?.imageUploadLimit]);
+  const creditsProgressPercent =
+    creditsRemaining == null
+      ? 100
+      : creditsTotal > 0
+        ? Math.min(100, Math.max(0, Math.round((creditsRemaining / creditsTotal) * 100)))
+        : 0;
 
   const tierOrder: PlanTier[] = ['starter', 'pro', 'premium'];
   const currentTierIndex = currentTier ? tierOrder.indexOf(currentTier) : -1;
@@ -1145,6 +1163,7 @@ export default function BillingPage() {
         hasEffectivePlan={hasEffectivePlan}
         isTrial={isTrial}
         creditsRemaining={creditsRemaining}
+        creditsProgressPercent={creditsProgressPercent}
         scheduledPlan={visibleScheduledPlan}
         formatDate={formatDate}
         getCycleLabel={getCycleLabel}
