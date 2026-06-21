@@ -58,6 +58,14 @@ const typedNotificationText = (
   const days = readParam(item, 'days') ?? readParam(item, 'daysLeft') ?? readParam(item, 'trialDaysLeft');
   const count = readParam(item, 'count') ?? readParam(item, 'matchCount') ?? readParam(item, 'matches');
 
+  if (['trial_started', 'trial_activated', 'free_trial_started', 'free_trial_activated'].includes(type)) {
+    return field === 'title'
+      ? '7일 무료 체험이 시작되었습니다'
+      : days
+        ? `${days}일 동안 Pro 기능을 이용할 수 있습니다.`
+        : '7일 동안 Pro 기능을 이용할 수 있습니다.';
+  }
+
   if (['trial_ended', 'trial_expired', 'free_trial_ended', 'free_trial_expired'].includes(type)) {
     return field === 'title'
       ? '무료 체험이 종료되었습니다'
@@ -87,6 +95,18 @@ const translateStoredEnglishText = (value: string, locale: AppLocale) => {
   if (!isKoreanNotificationLocale(locale)) return value;
 
   const normalized = value.trim();
+
+  if (/^(?:Your )?(?:7-day )?free trial (?:has )?(?:started|been activated)\.?$/i.test(normalized)) {
+    return '7일 무료 체험이 시작되었습니다.';
+  }
+
+  if (/^(?:Your )?(?:7-day )?free trial is now active\.?$/i.test(normalized)) {
+    return '7일 무료 체험이 활성화되었습니다.';
+  }
+
+  if (/^(?:Your )?(?:7-day )?free trial (?:has )?started\. You can use Pro features for 7 days\.?$/i.test(normalized)) {
+    return '7일 무료 체험이 시작되었습니다. 7일 동안 Pro 기능을 이용할 수 있습니다.';
+  }
 
   if (/^Your free trial has ended\. Upgrade to continue using the service\.?$/i.test(normalized)) {
     return '무료 체험이 종료되었습니다. 서비스를 계속 이용하려면 요금제를 업그레이드해 주세요.';

@@ -1409,6 +1409,8 @@
       "statusHeader": "Status",
       "transactionHeader": "Transaction",
       "checkoutOpened": "Checkout opened for {plan}. Complete payment to activate it.",
+      "trialStartedToast": "Your 7-day free trial has started.",
+      "trialAlreadyActiveToast": "Your free trial is already active.",
       "subscriptionCancelled": "Your subscription was cancelled.",
       "subscriptionPausedSuccess": "Your subscription will pause at the end of this billing period.",
       "subscriptionResumed": "Your subscription has been resumed.",

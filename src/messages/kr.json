@@ -1449,6 +1449,8 @@
       "statusHeader": "상태",
       "transactionHeader": "거래",
       "checkoutOpened": "{plan} 결제가 시작되었습니다. 결제를 완료하여 활성화하세요.",
+      "trialStartedToast": "7일 무료 체험이 시작되었습니다.",
+      "trialAlreadyActiveToast": "무료 체험이 이미 활성화되어 있습니다.",
       "subscriptionCancelled": "구독이 해지되었습니다.",
       "subscriptionPausedSuccess": "구독이 이번 결제 주기 종료 시 일시 중지됩니다.",
       "subscriptionResumed": "구독이 재개되었습니다.",

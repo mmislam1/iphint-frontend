@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { normalizeNotificationLocale } from '@/lib/notifications';
 import {
   type BillingPageData,
+  fetchNotifications,
   fetchBillingPageData,
   setAutoRenew,
   upgradeSubscription,
@@ -32,9 +34,13 @@ interface BillingHistoryItem {
 interface CheckoutResponse {
   code?: string;
   message?: string;
+  messages?: string[];
+  warnings?: string[];
   transactionId?: string;
   checkoutUrl?: string;
   url?: string;
+  snapshot?: BillingSnapshot | null;
+  subscription?: BillingSnapshot['subscription'];
 }
 
 interface PendingTrialCheckout {
@@ -410,7 +416,7 @@ const getPaddleEventTransactionId = (event: PaddleEventData) => {
 
 type BillingToastType = 'success' | 'error' | 'info' | 'warning';
 
-const showToast = (type: BillingToastType, text: string) => {
+const showRawToast = (type: BillingToastType, text: string) => {
   const trimmed = text.trim();
   if (!trimmed) return false;
 
@@ -418,14 +424,89 @@ const showToast = (type: BillingToastType, text: string) => {
   return true;
 };
 
-const showApiPayloadToasts = (payload: unknown, messageType: BillingToastType = 'info') => {
-  const { errors, warnings, messages } = getApiPayloadMessages(payload);
+const isTrialStartedCode = (code?: string | null) =>
+  !!code && ['TRIAL_STARTED', 'FREE_TRIAL_STARTED', 'TRIAL_ACTIVATED', 'FREE_TRIAL_ACTIVATED'].includes(code);
 
-  errors.forEach((message) => showToast('error', message));
-  warnings.forEach((message) => showToast('warning', message));
-  messages.forEach((message) => showToast(messageType, message));
+const hasTrialingSubscription = (payload: CheckoutResponse) => {
+  const subscription = payload.snapshot?.subscription ?? payload.subscription;
+  if (!subscription) return false;
 
-  return errors.length + warnings.length + messages.length > 0;
+  return (
+    subscription.status === 'trialing' ||
+    subscription.grantSource === 'trial' ||
+    subscription.isTrial === true ||
+    subscription.isTrialing === true
+  );
+};
+
+const hasCheckoutDestination = (payload: CheckoutResponse) =>
+  Boolean(payload.transactionId || payload.checkoutUrl || payload.url);
+
+const textLooksLikeTrialStarted = (text: string) =>
+  /(?:7[-\s]?day\s+)?(?:free\s+)?trial/i.test(text) &&
+  /(?:started|activated|active)/i.test(text) &&
+  !/already/i.test(text);
+
+const isImmediateTrialStartPayload = (payload: CheckoutResponse) => {
+  const code = readResponseCode(payload);
+  const messageText = [
+    payload.message,
+    ...(Array.isArray(payload.messages) ? payload.messages : []),
+    ...(Array.isArray(payload.warnings) ? payload.warnings : []),
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ');
+
+  return (
+    !hasCheckoutDestination(payload) &&
+    (isTrialStartedCode(code) || hasTrialingSubscription(payload) || textLooksLikeTrialStarted(messageText))
+  );
+};
+
+const localizeBillingToastText = (
+  text: string,
+  locale: 'en' | 'ko',
+  t: BillingTranslator,
+  code?: string | null,
+) => {
+  const trimmed = text.trim();
+  if (!trimmed) return trimmed;
+
+  if (/trial.*already.*active/i.test(trimmed)) {
+    return t('trialAlreadyActiveToast');
+  }
+
+  if (isTrialStartedCode(code) || textLooksLikeTrialStarted(trimmed)) {
+    return t('trialStartedToast');
+  }
+
+  if (/turn renewal on before downgrading/i.test(trimmed)) {
+    return t('turnRenewalOnBeforeDowngrade');
+  }
+
+  if (/auto-renew is off.*scheduled plan change/i.test(trimmed)) {
+    return t('autoRenewScheduleCancelled');
+  }
+
+  if (/scheduled plan change.*(?:canceled|cancelled)/i.test(trimmed)) {
+    return t('scheduledPlanCancelled');
+  }
+
+  if (/plan change scheduled/i.test(trimmed)) {
+    return t('planChangeScheduled');
+  }
+
+  if (/active subscription already exists/i.test(trimmed)) {
+    return t('activeSubscriptionChangeStarted');
+  }
+
+  if (locale === 'en') return trimmed;
+
+  if (/checkout opened/i.test(trimmed)) {
+    return t('checkoutOpened', { plan: trimmed.match(/for\s+(.+?)\./i)?.[1] ?? 'Pro' });
+  }
+
+  return trimmed;
 };
 
 export default function BillingPage() {
@@ -434,6 +515,7 @@ export default function BillingPage() {
     (state) => state.account.billing,
   );
   const snapshot = useAppSelector((state) => state.account.subscription.data) as BillingSnapshot | null;
+  const notificationPreferences = useAppSelector((state) => state.account.settings.notificationPreferences);
   const t = useTranslations('UserPanel.billing');
   const locale = useLocale();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
@@ -452,6 +534,7 @@ export default function BillingPage() {
   const activeCheckoutTransactionIdRef = useRef<string | null>(null);
 
   const isKoreanLocale = locale === 'kr';
+  const toastLocale = normalizeNotificationLocale(notificationPreferences.locale ?? locale);
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(isKoreanLocale ? 'ko-KR' : 'en-US', {
@@ -485,12 +568,48 @@ export default function BillingPage() {
     [t],
   );
 
+  const showToast = useCallback(
+    (type: BillingToastType, text: string, code?: string | null) =>
+      showRawToast(type, localizeBillingToastText(text, toastLocale, t, code)),
+    [t, toastLocale],
+  );
+
+  const showApiPayloadToasts = useCallback(
+    (payload: unknown, messageType: BillingToastType = 'info') => {
+      const { errors, warnings, messages } = getApiPayloadMessages(payload);
+      const code = readResponseCode(payload);
+
+      errors.forEach((message) => showToast('error', message, code));
+      warnings.forEach((message) => showToast('warning', message, code));
+      messages.forEach((message) => showToast(messageType, message, code));
+
+      return errors.length + warnings.length + messages.length > 0;
+    },
+    [showToast],
+  );
+
   const showBillingResult = useCallback((result: BillingPageData, type: BillingToastType, fallback?: string) => {
     const showedPayloadMessage = showApiPayloadToasts(result, type);
     if (!showedPayloadMessage && fallback) {
       showToast(type, fallback);
     }
-  }, []);
+  }, [showApiPayloadToasts, showToast]);
+
+  const refreshNotifications = useCallback(async () => {
+    try {
+      await dispatch(
+        fetchNotifications({
+          scope: 'topbar',
+          status: 'all',
+          page: 1,
+          limit: 8,
+          locale: toastLocale,
+        }),
+      ).unwrap();
+    } catch {
+      // Notification refresh is best-effort; billing state remains authoritative.
+    }
+  }, [dispatch, toastLocale]);
 
   useEffect(() => {
     let active = true;
@@ -781,6 +900,7 @@ export default function BillingPage() {
           startTransition(() => {
             void dispatch(fetchBillingPageData());
           });
+          void refreshNotifications();
         })();
         return;
       }
@@ -798,7 +918,7 @@ export default function BillingPage() {
         setCheckoutPlan(null);
       }
     },
-    [dispatch, t],
+    [dispatch, refreshNotifications, showToast, t],
   );
 
   const ensurePaddle = async () => {
@@ -859,6 +979,21 @@ export default function BillingPage() {
     showToast('info', t('checkoutOpened', { plan: planName }));
   };
 
+  const handleImmediateTrialStart = async (checkout: CheckoutResponse) => {
+    setCheckoutPlan(null);
+    setCheckoutError(null);
+
+    const showedPayloadMessage = showApiPayloadToasts(checkout, 'success');
+    if (!showedPayloadMessage) {
+      showToast('success', t('trialStartedToast'));
+    }
+
+    await dispatch(fetchBillingPageData()).unwrap().catch(() => {
+      return;
+    });
+    await refreshNotifications();
+  };
+
   const handleCheckoutResponse = async (
     checkout: CheckoutResponse,
     tier: PlanTier,
@@ -883,6 +1018,12 @@ export default function BillingPage() {
       return;
     }
 
+    if (isImmediateTrialStartPayload(checkout)) {
+      await handleImmediateTrialStart(checkout);
+      return;
+    }
+
+    showApiPayloadToasts(checkout, code === 'TRIAL_WILL_BE_CANCELLED' ? 'warning' : 'info');
     await launchCheckout(checkout, tier);
   };
 
@@ -904,8 +1045,6 @@ export default function BillingPage() {
       });
 
       const checkout = response.data as CheckoutResponse;
-      const code = readResponseCode(checkout);
-      showApiPayloadToasts(checkout, code === 'TRIAL_WILL_BE_CANCELLED' ? 'warning' : 'info');
       await handleCheckoutResponse(checkout, tier, targetCycle, Boolean(options?.bypassTrialWarning));
     } catch (paymentError) {
       const code = getBillingErrorCode(paymentError);
