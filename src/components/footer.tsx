@@ -5,8 +5,11 @@ import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import IpHintWordmark, { renderTextWithIpHintWordmark } from "@/components/IpHintWordmark";
-const localeOptions = ["kr", "en"] as const;
-type LocaleCode = (typeof localeOptions)[number];
+import { setStoredNotificationLocale } from "@/lib/api";
+import { useAppDispatch } from "@/lib/hooks";
+import { normalizeNotificationLocale } from "@/lib/notifications";
+import { updateNotificationPreferences } from "@/lib/store/slices/accountSlice";
+type LocaleCode = "kr" | "en";
 
 function FooterLangSwitcher({
   selected,
@@ -84,6 +87,7 @@ function FooterLangSwitcher({
 }
 
 export default function Footer() {
+  const dispatch = useAppDispatch();
   const t = useTranslations("Footer");
   const locale = useLocale() === "en" ? "en" : "kr";
   const router = useRouter();
@@ -97,6 +101,15 @@ export default function Footer() {
   const changeLanguage = (newLocale: LocaleCode) => {
     if (newLocale === locale) {
       return;
+    }
+
+    const notificationLocale = normalizeNotificationLocale(newLocale);
+    setStoredNotificationLocale(notificationLocale);
+
+    if (typeof window !== "undefined" && localStorage.getItem("token")) {
+      void dispatch(updateNotificationPreferences({ locale: notificationLocale })).unwrap().catch(() => {
+        return;
+      });
     }
 
     router.replace(pathname, { locale: newLocale, scroll: false });

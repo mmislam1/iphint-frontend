@@ -4,6 +4,10 @@ import React from 'react';
 import { Languages } from 'lucide-react';
 import { useLocale } from 'next-intl';
 import { routing, usePathname, useRouter } from '@/i18n/routing';
+import { setStoredNotificationLocale } from '@/lib/api';
+import { useAppDispatch } from '@/lib/hooks';
+import { normalizeNotificationLocale } from '@/lib/notifications';
+import { updateNotificationPreferences } from '@/lib/store/slices/accountSlice';
 
 const localeLabels: Record<(typeof routing.locales)[number], string> = {
   en: 'EN',
@@ -11,6 +15,7 @@ const localeLabels: Record<(typeof routing.locales)[number], string> = {
 };
 
 export default function LocaleSwitcher() {
+  const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
@@ -18,6 +23,15 @@ export default function LocaleSwitcher() {
   const handleLanguageChange = (nextLocale: (typeof routing.locales)[number]) => {
     if (nextLocale === locale) {
       return;
+    }
+
+    const notificationLocale = normalizeNotificationLocale(nextLocale);
+    setStoredNotificationLocale(notificationLocale);
+
+    if (typeof window !== 'undefined' && localStorage.getItem('token')) {
+      void dispatch(updateNotificationPreferences({ locale: notificationLocale })).unwrap().catch(() => {
+        return;
+      });
     }
 
     router.replace(pathname, { locale: nextLocale, scroll: false });

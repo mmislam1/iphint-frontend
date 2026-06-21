@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { Menu, X } from "lucide-react";
+import { setStoredNotificationLocale } from "@/lib/api";
+import { useAppDispatch } from "@/lib/hooks";
+import { normalizeNotificationLocale } from "@/lib/notifications";
+import { updateNotificationPreferences } from "@/lib/store/slices/accountSlice";
 
 const locales = [
   { code: "en", label: "EN" },
@@ -106,6 +110,7 @@ function NavLangSwitcher({
 }
 
 export default function Header() {
+  const dispatch = useAppDispatch();
   const t = useTranslations("header");
   const locale = useLocale();
   const activeLocale = locale === "kr" ? "kr" : "en";
@@ -116,6 +121,15 @@ export default function Header() {
   const switchLocale = (nextLocale: (typeof locales)[number]["code"]) => {
     if (nextLocale === activeLocale) {
       return;
+    }
+
+    const notificationLocale = normalizeNotificationLocale(nextLocale);
+    setStoredNotificationLocale(notificationLocale);
+
+    if (typeof window !== "undefined" && localStorage.getItem("token")) {
+      void dispatch(updateNotificationPreferences({ locale: notificationLocale })).unwrap().catch(() => {
+        return;
+      });
     }
 
     router.replace(pathname, { locale: nextLocale, scroll: false });
