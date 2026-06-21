@@ -16,7 +16,6 @@ import {
   upgradeSubscription,
   type BillingCycle,
   type BillingPlan as Plan,
-  type BillingResourceLimits,
   type BillingSnapshot,
   type PlanTier,
 } from '@/lib/store/slices/accountSlice';
@@ -58,17 +57,6 @@ type BillingTranslator = ReturnType<typeof useTranslations>;
 type FormatDate = (value?: string | null) => string;
 type GetCycleLabel = (value?: BillingCycle | null) => string;
 
-const formatLimit = (
-  value: number | string | boolean | null | undefined,
-  numberFormatter: Intl.NumberFormat,
-  unlimitedLabel: string,
-) => {
-  if (typeof value === 'boolean') return value ? unlimitedLabel : '0';
-  if (typeof value === 'number') return value > 0 ? numberFormatter.format(value) : unlimitedLabel;
-  if (typeof value === 'string' && value.trim()) return value;
-  return unlimitedLabel;
-};
-
 function PlanSummary({
   t,
   currentPlanName,
@@ -76,9 +64,8 @@ function PlanSummary({
   currentPlanPrice,
   hasEffectivePlan,
   isTrial,
-  resourceLimits,
-  searchUsage,
-  creditUsagePercent,
+  creditsRemaining,
+  scheduledPlan,
   formatDate,
   getCycleLabel,
   numberFormatter,
@@ -97,9 +84,8 @@ function PlanSummary({
   currentPlanPrice: string;
   hasEffectivePlan: boolean;
   isTrial: boolean;
-  resourceLimits: BillingResourceLimits | null;
-  searchUsage: { used: number; limit: number };
-  creditUsagePercent: number;
+  creditsRemaining: number | null;
+  scheduledPlan: NormalizedScheduledPlan | null;
   formatDate: FormatDate;
   getCycleLabel: GetCycleLabel;
   numberFormatter: Intl.NumberFormat;
@@ -142,19 +128,29 @@ function PlanSummary({
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-60 sm:items-end">
-          {isTrial && (
-            <div className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:w-auto">
-              {trialDaysLeft != null
-                ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
-                : trialEndsAt
-                  ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
-                  : t('trialActive')}
-            </div>
-          )}
-          <div className="w-full rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 sm:w-auto sm:min-w-60">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold text-gray-900">
+        {isTrial && (
+          <div className="w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:w-auto">
+            {trialDaysLeft != null
+              ? t('trialDaysLeft', { days: trialDaysLeft, unit: trialDaysLeft !== 1 ? t('days') : t('day') })
+              : trialEndsAt
+                ? t('trialEndsAt', { date: formatDate(trialEndsAt) })
+                : t('trialActive')}
+          </div>
+        )}
+      </div>
+
+      {hasEffectivePlan && (
+        <div className={['mt-4 grid grid-cols-1 gap-2', scheduledPlan ? 'md:grid-cols-3' : 'md:grid-cols-2'].join(' ')}>
+          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('creditsRemaining')}</p>
+            <p className="mt-1 text-xl font-semibold leading-none text-gray-900">
+              {creditsRemaining == null ? t('unlimited') : numberFormatter.format(creditsRemaining)}
+            </p>
+          </div>
+
+          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
                 {autoRenewEnabled ? t('autoRenewOn') : t('autoRenewOff')}
               </p>
               {canToggleAutoRenew && (
@@ -162,7 +158,7 @@ function PlanSummary({
                   type="button"
                   onClick={() => onAutoRenewToggle(!autoRenewEnabled)}
                   disabled={autoRenewLoading}
-                  className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {autoRenewLoading
                     ? t('processing')
@@ -172,70 +168,23 @@ function PlanSummary({
                 </button>
               )}
             </div>
-            <p className="mt-1 text-xs text-gray-500">{renewalDetail}</p>
+            <p className="mt-1 text-sm font-medium text-gray-900">{renewalDetail}</p>
           </div>
-        </div>
-      </div>
 
-      {hasEffectivePlan && (
-        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-4">
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('uploadsUsed')}</p>
-            <p className="mt-1 text-xl font-semibold leading-none text-gray-900">{numberFormatter.format(searchUsage.used)}</p>
-            {searchUsage.limit > 0 && (
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                <div className="h-full rounded-full bg-gray-900 transition-all" style={{ width: `${creditUsagePercent}%` }} />
+          {scheduledPlan && (
+            <div className="min-w-0 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2.5 text-sky-900">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">{t('scheduledPlanTitle')}</p>
+              <p className="mt-1 text-sm font-semibold">
+                {scheduledPlan.name} / {getCycleLabel(scheduledPlan.billingCycle)}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-sky-800">
+                <span>{t('scheduledPlanChargeAt', { date: formatDate(scheduledPlan.chargeAt) })}</span>
+                <span>{t('scheduledPlanActivatesAt', { date: formatDate(scheduledPlan.activatesAt) })}</span>
               </div>
-            )}
-          </div>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('imageUploads')}</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">
-              {formatLimit(resourceLimits?.imageUploadLimit, numberFormatter, t('unlimited'))}
-            </p>
-          </div>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('alerts')}</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">
-              {formatLimit(resourceLimits?.alertLimit, numberFormatter, t('unlimited'))}
-            </p>
-          </div>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('pdfReports')}</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">
-              {resourceLimits?.pdfEnabled ? t('included') : t('notIncluded')}
-            </p>
-          </div>
+            </div>
+          )}
         </div>
       )}
-    </section>
-  );
-}
-
-function ScheduleSummary({
-  t,
-  scheduledPlan,
-  formatDate,
-  getCycleLabel,
-}: {
-  t: BillingTranslator;
-  scheduledPlan: NormalizedScheduledPlan | null;
-  formatDate: FormatDate;
-  getCycleLabel: GetCycleLabel;
-}) {
-  if (!scheduledPlan) return null;
-
-  return (
-    <section className="rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sky-950 shadow-sm sm:p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">{t('scheduledPlanTitle')}</p>
-      <h2 className="mt-2 text-lg font-semibold">
-        {scheduledPlan.name} / {getCycleLabel(scheduledPlan.billingCycle)}
-      </h2>
-      <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
-        <p>{t('scheduledPlanEffectiveAt', { date: formatDate(scheduledPlan.effectiveAt) })}</p>
-        <p>{t('scheduledPlanChargeAt', { date: formatDate(scheduledPlan.chargeAt) })}</p>
-        <p>{t('scheduledPlanActivatesAt', { date: formatDate(scheduledPlan.activatesAt) })}</p>
-      </div>
     </section>
   );
 }
@@ -617,23 +566,6 @@ export default function BillingPage() {
     typeof brief?.renewal?.canToggle === 'boolean'
       ? brief.renewal.canToggle
       : isPaidSubscription && hasEffectivePlan;
-  const currentResourceLimits: BillingResourceLimits | null =
-    briefCurrentPlan?.resourceLimits ??
-    briefCurrentPlan?.limits ??
-    (snapshot?.usage
-      ? {
-          imageUploadLimit: snapshot.usage.imageUploadLimit,
-          alertLimit: snapshot.usage.alertLimit,
-          pdfEnabled: snapshot.usage.pdfEnabled,
-        }
-      : currentPlanFromCatalog
-        ? {
-            imageUploadLimit: currentPlanFromCatalog.imageUploadLimit,
-            alertLimit: currentPlanFromCatalog.alertLimit,
-            pdfEnabled: currentPlanFromCatalog.pdfEnabled,
-          }
-        : null);
-
   const scheduledPlan = useMemo<NormalizedScheduledPlan | null>(() => {
     const scheduled = brief?.scheduledPlan;
     if (scheduled) {
@@ -671,20 +603,19 @@ export default function BillingPage() {
     return typeof fallbackPrice === 'number' ? formatPrice(fallbackPrice) : '--';
   }, [briefCurrentPlan?.price, briefCurrentPlan?.priceFormatted, currentBillingCycle, currentPlanFromCatalog?.pricing, formatPrice]);
 
-  const searchUsage = useMemo(() => {
-    if (!snapshot) {
-      return { used: 0, limit: 0 };
-    }
+  const creditsRemaining = useMemo(() => {
+    if (!snapshot) return 0;
+
+    const credits = Number(snapshot.credits);
+    if (Number.isFinite(credits)) return Math.max(0, credits);
 
     const used = Number(snapshot.usage.imagesUsedThisMonth || 0);
     const limit = Number(snapshot.usage.imageUploadLimit || 0);
-    return {
-      used: Number.isFinite(used) ? Math.max(0, used) : 0,
-      limit: Number.isFinite(limit) ? Math.max(0, limit) : 0,
-    };
+    if (!Number.isFinite(limit) || limit <= 0) return null;
+
+    const safeUsed = Number.isFinite(used) ? Math.max(0, used) : 0;
+    return Math.max(0, limit - safeUsed);
   }, [snapshot]);
-  const creditUsagePercent =
-    searchUsage.limit > 0 ? Math.min(100, Math.max(0, Math.round((searchUsage.used / searchUsage.limit) * 100))) : 0;
 
   const tierOrder: PlanTier[] = ['starter', 'pro', 'premium'];
   const currentTierIndex = currentTier ? tierOrder.indexOf(currentTier) : -1;
@@ -1008,6 +939,13 @@ export default function BillingPage() {
   const handlePlanAction = async (tier: PlanTier) => {
     if (hasExistingPaddleSubscription) {
       const cancelScheduledChange = Boolean(hasScheduledPlan && currentTier && tier === currentTier);
+      const targetTierIndex = tierOrder.indexOf(tier);
+      const isDowngrade = currentTierIndex >= 0 && targetTierIndex >= 0 && targetTierIndex < currentTierIndex;
+      if (isAutoRenewOff && isDowngrade) {
+        showToast('warning', t('turnRenewalOnBeforeDowngrade'));
+        return;
+      }
+
       const targetTier = cancelScheduledChange && currentTier ? currentTier : tier;
       const targetCycle = cancelScheduledChange ? currentBillingCycle : cycle;
       await schedulePlanChange(targetTier, targetCycle, { cancelScheduledChange });
@@ -1206,9 +1144,8 @@ export default function BillingPage() {
         currentPlanPrice={currentPlanPrice}
         hasEffectivePlan={hasEffectivePlan}
         isTrial={isTrial}
-        resourceLimits={currentResourceLimits}
-        searchUsage={searchUsage}
-        creditUsagePercent={creditUsagePercent}
+        creditsRemaining={creditsRemaining}
+        scheduledPlan={visibleScheduledPlan}
         formatDate={formatDate}
         getCycleLabel={getCycleLabel}
         numberFormatter={numberFormatter}
@@ -1220,13 +1157,6 @@ export default function BillingPage() {
         renewalEndsAt={renewalEndsAt}
         renewalRenewsAt={renewalRenewsAt}
         onAutoRenewToggle={handleAutoRenewToggle}
-      />
-
-      <ScheduleSummary
-        t={t}
-        scheduledPlan={visibleScheduledPlan}
-        formatDate={formatDate}
-        getCycleLabel={getCycleLabel}
       />
 
       <PlanPicker
