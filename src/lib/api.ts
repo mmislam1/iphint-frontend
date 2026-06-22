@@ -163,54 +163,94 @@ apiClient.interceptors.response.use(
   },
 );
 
-const extractApiErrorMessage = (value: unknown): string | null => {
+type ApiMessageLocale = 'en' | 'kr';
+
+const toMessageLocale = (locale?: NotificationLocaleInput): ApiMessageLocale =>
+  normalizeNotificationLocale(locale ?? getCurrentApiLocale());
+
+const readMessageString = (value: unknown): string | null => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     return trimmed ? trimmed : null;
   }
 
-  if (value && typeof value === 'object') {
-    if ('message' in value) {
-      return extractApiErrorMessage((value as { message?: unknown }).message);
-    }
-
-    if ('error' in value) {
-      return extractApiErrorMessage((value as { error?: unknown }).error);
-    }
-  }
-
   return null;
 };
 
-const extractApiMessageList = (value: unknown): string[] => {
+const readMessageTranslation = (value: unknown, locale: ApiMessageLocale): string | null => {
+  if (!value || typeof value !== 'object' || !('messageTranslations' in value)) {
+    return null;
+  }
+
+  const translations = (value as { messageTranslations?: unknown }).messageTranslations;
+  if (!translations || typeof translations !== 'object') {
+    return null;
+  }
+
+  const localized = (translations as Record<string, unknown>)[locale];
+  return readMessageString(localized);
+};
+
+const readDirectApiMessage = (value: unknown, locale: ApiMessageLocale): string | null => {
+  if (value && typeof value === 'object') {
+    const translatedMessage = readMessageTranslation(value, locale);
+    if (translatedMessage) return translatedMessage;
+
+    return readMessageString((value as { message?: unknown }).message);
+  }
+
+  return readMessageString(value);
+};
+
+export const pickApiMessage = (payload: unknown, locale?: NotificationLocaleInput) => {
+  const appLocale = toMessageLocale(locale);
+  if (!payload || typeof payload !== 'object') {
+    return readMessageString(payload) ?? '';
+  }
+
+  const directMessage = readDirectApiMessage(payload, appLocale);
+  if (directMessage) return directMessage;
+
+  const error = (payload as { error?: unknown }).error;
+  const errorMessage = readDirectApiMessage(error, appLocale);
+  return errorMessage ?? '';
+};
+
+const extractApiErrorMessage = (value: unknown, locale = toMessageLocale()): string | null => {
+  const pickedMessage = pickApiMessage(value, locale);
+  return pickedMessage || null;
+};
+
+const extractApiMessageList = (value: unknown, locale = toMessageLocale()): string[] => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     return trimmed ? [trimmed] : [];
   }
 
   if (Array.isArray(value)) {
-    return value.flatMap(extractApiMessageList);
+    return value.flatMap((item) => extractApiMessageList(item, locale));
   }
 
   if (value && typeof value === 'object') {
-    const nested = value as { message?: unknown; error?: unknown };
+    const directMessage = readDirectApiMessage(value, locale);
+    if (directMessage) return [directMessage];
 
-    if ('message' in nested) {
-      return extractApiMessageList(nested.message);
-    }
+    const nested = value as { error?: unknown };
 
     if ('error' in nested) {
-      return extractApiMessageList(nested.error);
+      return extractApiMessageList(nested.error, locale);
     }
   }
 
   return [];
 };
 
-export const getApiPayloadMessages = (payload: unknown) => {
+export const getApiPayloadMessages = (payload: unknown, locale?: NotificationLocaleInput) => {
+  const appLocale = toMessageLocale(locale);
+
   if (!payload || typeof payload !== 'object') {
     return {
-      messages: extractApiMessageList(payload),
+      messages: extractApiMessageList(payload, appLocale),
       warnings: [] as string[],
       errors: [] as string[],
     };
@@ -225,10 +265,12 @@ export const getApiPayloadMessages = (payload: unknown) => {
     errors?: unknown;
   };
 
+  const directMessage = readDirectApiMessage(value, appLocale);
+
   return {
-    messages: [...extractApiMessageList(value.message), ...extractApiMessageList(value.messages)],
-    warnings: [...extractApiMessageList(value.warning), ...extractApiMessageList(value.warnings)],
-    errors: [...extractApiMessageList(value.error), ...extractApiMessageList(value.errors)],
+    messages: [...(directMessage ? [directMessage] : []), ...extractApiMessageList(value.messages, appLocale)],
+    warnings: [...extractApiMessageList(value.warning, appLocale), ...extractApiMessageList(value.warnings, appLocale)],
+    errors: [...extractApiMessageList(value.error, appLocale), ...extractApiMessageList(value.errors, appLocale)],
   };
 };
 

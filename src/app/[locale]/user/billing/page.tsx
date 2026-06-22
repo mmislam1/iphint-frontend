@@ -588,7 +588,7 @@ export default function BillingPage() {
 
   const showApiPayloadToasts = useCallback(
     (payload: unknown, messageType: BillingToastType = 'info') => {
-      const { errors, warnings, messages } = getApiPayloadMessages(payload);
+      const { errors, warnings, messages } = getApiPayloadMessages(payload, toastLocale);
       const code = readResponseCode(payload);
 
       errors.forEach((message) => showToast('error', message, code));
@@ -597,7 +597,7 @@ export default function BillingPage() {
 
       return errors.length + warnings.length + messages.length > 0;
     },
-    [showToast],
+    [showToast, toastLocale],
   );
 
   const showBillingResult = useCallback((result: BillingPageData, type: BillingToastType, fallback?: string) => {
