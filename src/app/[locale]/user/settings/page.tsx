@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, CheckCircle2, Mail, Palette, RefreshCcw, Search, Shield, Trash2, UserCircle2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { getStoredNotificationLocale } from '@/lib/api';
+import { getStoredNotificationLocale, setStoredNotificationLocale } from '@/lib/api';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { useRouter } from '@/i18n/routing';
 import {
@@ -156,7 +156,14 @@ export default function SettingsPage() {
     return normalizeNotificationLocale(value ?? storedNotificationPrefs.locale ?? getStoredNotificationLocale() ?? locale);
   }, [locale, storedNotificationPrefs.locale]);
 
+  const appNotificationLocale = normalizeNotificationLocale(locale);
   const selectedNotificationLocale = resolveNotificationLocale(notificationPrefs.locale);
+
+  const handleNotificationLocaleChange = (value: NotificationLocaleInput) => {
+    const nextLocale = normalizeNotificationLocale(value);
+    setStoredNotificationLocale(nextLocale);
+    setNotificationPrefs((p) => ({ ...p, locale: nextLocale }));
+  };
 
   const loadSettings = React.useCallback(async () => {
     return dispatch(fetchSettingsOverview()).unwrap();
@@ -174,10 +181,10 @@ export default function SettingsPage() {
         q,
         page: 1,
         limit: 20,
-        locale: resolveNotificationLocale(nextLocale),
+        locale: normalizeNotificationLocale(nextLocale ?? appNotificationLocale),
       }),
     ).unwrap();
-  }, [dispatch, resolveNotificationLocale]);
+  }, [appNotificationLocale, dispatch]);
 
   useEffect(() => {
     setProfile(storedProfile);
@@ -194,8 +201,8 @@ export default function SettingsPage() {
     const bootstrap = async () => {
       try {
         setError('');
-        const settings = await loadSettings();
-        await loadNotifications('all', '', settings.notifications.locale);
+        await loadSettings();
+        await loadNotifications('all');
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Failed to load settings');
         setSuccess('');
@@ -217,11 +224,11 @@ export default function SettingsPage() {
 
   const handleSavePreferences = async () => {
     try {
-      const savedPreferences = await dispatch(updateNotificationPreferences({
+      await dispatch(updateNotificationPreferences({
         ...notificationPrefs,
         locale: selectedNotificationLocale,
       })).unwrap();
-      await loadNotifications(notificationFilter, notificationQuery, savedPreferences.locale);
+      await loadNotifications(notificationFilter, notificationQuery);
       showMessage(t('preferencesSaved'));
     } catch (err) {
       showMessage(typeof err === 'string' ? err : t('preferencesSaveFailed'), true);
@@ -322,7 +329,7 @@ export default function SettingsPage() {
 
   const handleMarkRead = async (id: string) => {
     try {
-      await dispatch(markNotificationRead({ notificationId: id, locale: selectedNotificationLocale })).unwrap();
+      await dispatch(markNotificationRead({ notificationId: id, locale: appNotificationLocale })).unwrap();
       await loadNotifications(notificationFilter, notificationQuery);
     } catch {
       showMessage(t('markReadFailed'), true);
@@ -344,7 +351,7 @@ export default function SettingsPage() {
       if (!item.isRead) {
         await dispatch(markNotificationRead({
           notificationId: item._id,
-          locale: selectedNotificationLocale,
+          locale: appNotificationLocale,
         })).unwrap();
       }
 
@@ -593,13 +600,11 @@ export default function SettingsPage() {
             {t('notificationLanguage')}
             <select
               value={selectedNotificationLocale}
-              onChange={(e) =>
-                setNotificationPrefs((p) => ({ ...p, locale: e.target.value as NotificationLocale }))
-              }
+              onChange={(e) => handleNotificationLocaleChange(e.target.value as NotificationLocale)}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none"
             >
               <option value="en">{t('notificationLanguageEnglish')}</option>
-              <option value="ko">{t('notificationLanguageKorean')}</option>
+              <option value="kr">{t('notificationLanguageKorean')}</option>
             </select>
           </label>
         </div>
@@ -732,7 +737,11 @@ export default function SettingsPage() {
               {t('noNotifications')}
             </p>
           ) : (
-            notifications.map((item) => (
+            notifications.map((item) => {
+              const localizedTitle = localizeNotificationText(item.title, appNotificationLocale, item, 'title');
+              const localizedMessage = localizeNotificationText(item.message, appNotificationLocale, item, 'message');
+
+              return (
               <div
                 key={item._id}
                 onClick={() => item.actionUrl && handleOpenNotification(item)}
@@ -741,14 +750,14 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
-                      {localizeNotificationText(item.title, selectedNotificationLocale, item, 'title')}
+                      {localizedTitle}
                     </p>
-                    {item.message && (
+                    {localizedMessage && (
                       <p className="mt-1 text-sm text-gray-600">
-                        {localizeNotificationText(item.message, selectedNotificationLocale, item, 'message')}
+                        {localizedMessage}
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-gray-400">{formatNotificationTimestamp(item.timestamp, selectedNotificationLocale)}</p>
+                    <p className="mt-2 text-xs text-gray-400">{formatNotificationTimestamp(item.timestamp, appNotificationLocale)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 self-center">
                     {!item.isRead && (
@@ -805,7 +814,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </section>

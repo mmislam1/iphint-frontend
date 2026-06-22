@@ -7,7 +7,12 @@ import {
   getStoredNotificationLocale,
   setStoredNotificationLocale,
 } from '@/lib/api';
-import { normalizeNotificationLocale, type NotificationLocale, type NotificationLocaleInput } from '@/lib/notifications';
+import {
+  normalizeNotificationLocale,
+  type NotificationLocale,
+  type NotificationLocaleInput,
+  type NotificationTranslations,
+} from '@/lib/notifications';
 import { detectCountryCodeByIp } from '../../currency';
 
 export type PlanTier = 'starter' | 'pro' | 'premium';
@@ -167,6 +172,8 @@ export interface NotificationItem {
   _id: string;
   title: string;
   message?: string;
+  locale?: NotificationLocaleInput;
+  translations?: NotificationTranslations;
   type?: string;
   isRead?: boolean;
   actionUrl?: string;

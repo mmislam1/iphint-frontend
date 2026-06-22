@@ -6,7 +6,7 @@ import React, { startTransition, useCallback, useEffect, useMemo, useRef, useSta
 import { useLocale, useTranslations } from 'next-intl';
 import { AlertTriangle, Check, Crown } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiClient, getApiErrorMessage, getApiPayloadMessages, getStoredNotificationLocale } from '@/lib/api';
+import { apiClient, getApiErrorMessage, getApiPayloadMessages } from '@/lib/api';
 import { formatPriceByCountry } from '@/lib/currency';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { normalizeNotificationLocale } from '@/lib/notifications';
@@ -463,9 +463,22 @@ const isImmediateTrialStartPayload = (payload: CheckoutResponse) => {
   );
 };
 
+const isTrialBillingResult = (result: BillingPageData) => {
+  const subscription = result.snapshot?.subscription;
+  const trial = result.snapshot?.brief?.trial;
+
+  return Boolean(
+    trial?.isTrial ||
+      subscription?.status === 'trialing' ||
+      subscription?.grantSource === 'trial' ||
+      subscription?.isTrial === true ||
+      subscription?.isTrialing === true,
+  );
+};
+
 const localizeBillingToastText = (
   text: string,
-  locale: 'en' | 'ko',
+  locale: 'en' | 'kr',
   t: BillingTranslator,
   code?: string | null,
 ) => {
@@ -515,7 +528,6 @@ export default function BillingPage() {
     (state) => state.account.billing,
   );
   const snapshot = useAppSelector((state) => state.account.subscription.data) as BillingSnapshot | null;
-  const notificationPreferences = useAppSelector((state) => state.account.settings.notificationPreferences);
   const t = useTranslations('UserPanel.billing');
   const locale = useLocale();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
@@ -534,9 +546,7 @@ export default function BillingPage() {
   const activeCheckoutTransactionIdRef = useRef<string | null>(null);
 
   const isKoreanLocale = locale === 'kr';
-  const toastLocale = normalizeNotificationLocale(
-    notificationPreferences.locale ?? getStoredNotificationLocale() ?? locale,
-  );
+  const toastLocale = normalizeNotificationLocale(locale);
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(isKoreanLocale ? 'ko-KR' : 'en-US', {
@@ -875,6 +885,13 @@ export default function BillingPage() {
         setCheckoutError(null);
 
         void (async () => {
+          let trialStartedToastShown = false;
+          const showTrialStartedToast = (result: BillingPageData) => {
+            if (trialStartedToastShown || !isTrialBillingResult(result)) return;
+            trialStartedToastShown = true;
+            showToast('success', t('trialStartedToast'));
+          };
+
           try {
             await apiClient.post('/billing/sync', transactionId ? { transactionId } : {});
           } catch {
@@ -888,6 +905,7 @@ export default function BillingPage() {
             pollTimerRef.current = setTimeout(async () => {
               try {
                 const result = await dispatch(fetchBillingPageData()).unwrap();
+                showTrialStartedToast(result);
                 const subscription = result.snapshot?.subscription;
                 const renewal = result.snapshot?.brief?.renewal;
                 if (subscription?.status === 'active' && (subscription.paddleManaged || renewal?.autoRenew)) return;
@@ -900,7 +918,9 @@ export default function BillingPage() {
 
           poll();
           startTransition(() => {
-            void dispatch(fetchBillingPageData());
+            void dispatch(fetchBillingPageData()).unwrap().then(showTrialStartedToast).catch(() => {
+              return;
+            });
           });
           void refreshNotifications();
         })();

@@ -1,10 +1,20 @@
 export type AppLocale = 'en' | 'kr' | 'ko' | string;
-export type NotificationLocale = 'en' | 'ko';
-export type NotificationLocaleInput = NotificationLocale | 'kr' | 'ko-KR' | 'en-US' | string | null | undefined;
+export type NotificationLocale = 'en' | 'kr';
+export type NotificationLocaleInput = NotificationLocale | 'ko' | 'ko-KR' | 'en-US' | string | null | undefined;
+
+export interface NotificationTranslation {
+  title?: string;
+  message?: string;
+}
+
+export type NotificationTranslations = Partial<Record<NotificationLocale, NotificationTranslation>> &
+  Record<string, NotificationTranslation | undefined>;
 
 export interface LocalizableNotification {
   title?: string;
   message?: string;
+  locale?: NotificationLocaleInput;
+  translations?: NotificationTranslations;
   type?: string;
   timestamp?: string;
   titleKey?: string;
@@ -19,11 +29,11 @@ type NotificationField = 'title' | 'message';
 
 export const normalizeNotificationLocale = (locale: NotificationLocaleInput): NotificationLocale => {
   const normalized = typeof locale === 'string' ? locale.trim().toLowerCase() : '';
-  return normalized === 'ko' || normalized === 'ko-kr' || normalized === 'kr' ? 'ko' : 'en';
+  return normalized === 'ko' || normalized === 'ko-kr' || normalized === 'kr' ? 'kr' : 'en';
 };
 
 export const isKoreanNotificationLocale = (locale: NotificationLocaleInput) =>
-  normalizeNotificationLocale(locale) === 'ko';
+  normalizeNotificationLocale(locale) === 'kr';
 
 const toIntlLocale = (locale: AppLocale) => (isKoreanNotificationLocale(locale) ? 'ko-KR' : 'en-US');
 
@@ -43,6 +53,29 @@ const normalizeKey = (value?: string | null) => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
   return normalized || null;
+};
+
+const readTranslationField = (
+  translation: NotificationTranslation | undefined,
+  field: NotificationField,
+) => {
+  const text = translation?.[field];
+  return typeof text === 'string' && text.trim() ? text : null;
+};
+
+const readTranslatedNotificationText = (
+  item: LocalizableNotification | undefined,
+  field: NotificationField,
+  locale: AppLocale,
+) => {
+  const translations = item?.translations;
+  if (!translations) return null;
+
+  const requestedLocale = normalizeNotificationLocale(locale);
+  return (
+    readTranslationField(translations[requestedLocale], field) ??
+    readTranslationField(translations.en, field)
+  );
 };
 
 const typedNotificationText = (
@@ -137,6 +170,9 @@ export const localizeNotificationText = (
   item?: LocalizableNotification,
   field: NotificationField = 'message',
 ) => {
+  const translatedText = readTranslatedNotificationText(item, field, locale);
+  if (translatedText) return translatedText;
+
   if (!value) return value;
 
   const typedText = typedNotificationText(item, field, locale);

@@ -5,7 +5,6 @@ import { Menu, Bell, Check, Search, Trash2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
-import { getStoredNotificationLocale } from '@/lib/api';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
 	formatNotificationTimestamp,
@@ -73,12 +72,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 	const [notificationQuery, setNotificationQuery] = useState('');
 	const notifications = useAppSelector((state) => state.account.notifications.topbar.items) as NotificationItem[];
 	const unreadCount = useAppSelector((state) => state.account.notifications.unreadCount);
-	const notificationPreferences = useAppSelector((state) => state.account.settings.notificationPreferences);
 	const settingsLoaded = useAppSelector((state) => state.account.settings.loaded);
 	const settingsLoading = useAppSelector((state) => state.account.settings.loading);
-	const notificationLocale = normalizeNotificationLocale(
-		notificationPreferences.locale ?? getStoredNotificationLocale() ?? locale,
-	);
+	const notificationLocale = normalizeNotificationLocale(locale);
 	const menuRef = useRef<HTMLDivElement | null>(null);
 	const notificationQueryRef = useRef(notificationQuery);
 
@@ -206,7 +202,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 		const localized = localizeStoredNotificationText(value, notificationLocale, item, field);
 		if (localized !== value) return localized;
 
-		if (!value || notificationLocale !== 'ko') return value;
+		if (!value || notificationLocale !== 'kr') return value;
 
 		const normalized = value.trim();
 
@@ -284,7 +280,11 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 											{t('empty')}
 										</p>
 									) : (
-										notifications.map((item) => (
+										notifications.map((item) => {
+											const localizedTitle = localizeNotificationText(item.title, item, 'title');
+											const localizedMessage = localizeNotificationText(item.message, item, 'message');
+
+											return (
 											<div
 												key={item._id}
 												className={[
@@ -298,8 +298,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 														onClick={() => goToNotification(item)}
 														className="min-w-0 flex-1 cursor-pointer text-left"
 													>
-														<p className="line-clamp-1 text-xs font-semibold text-gray-900">{localizeNotificationText(item.title, item, 'title')}</p>
-														{item.message && <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{localizeNotificationText(item.message, item, 'message')}</p>}
+														<p className="line-clamp-1 text-xs font-semibold text-gray-900">{localizedTitle}</p>
+														{localizedMessage && <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{localizedMessage}</p>}
 														<p className="mt-1 text-[10px] text-gray-400">{formatNotificationTimestamp(item.timestamp, notificationLocale)}</p>
 													</button>
 
@@ -325,7 +325,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 													</div>
 												</div>
 											</div>
-										))
+											);
+										})
 									)}
 								</div>
 							</div>

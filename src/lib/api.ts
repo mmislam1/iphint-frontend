@@ -66,12 +66,17 @@ const getCurrentLocale = () => {
 };
 
 const getCurrentApiLocale = () => {
+  const currentLocale = toApiLocale(getCurrentLocale());
+  if (currentLocale) {
+    return currentLocale;
+  }
+
   const storedLocale = getStoredNotificationLocale();
   if (storedLocale) {
     return storedLocale;
   }
 
-  return toApiLocale(getCurrentLocale());
+  return 'en';
 };
 
 apiClient.interceptors.request.use((config) => {
@@ -82,7 +87,7 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  config.headers['Accept-Language'] = locale === 'ko' ? 'ko-KR,ko;q=0.9,en;q=0.8' : 'en-US,en;q=0.9';
+  config.headers['Accept-Language'] = locale === 'kr' ? 'ko-KR,ko;q=0.9,en;q=0.8' : 'en-US,en;q=0.9';
   config.headers['X-Locale'] = locale;
 
   return config;
