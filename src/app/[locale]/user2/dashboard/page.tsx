@@ -52,6 +52,19 @@ export default function DashboardPage() {
   // Get user data for name and referral code
   const user = useAppSelector((state) => state.user);
   const { stats, latestSearches, alerts, loading } = useAppSelector((state) => state.user);
+  const normalizedUserName = (user?.name || '').trim();
+  const displayName =
+    normalizedUserName && normalizedUserName.toLowerCase() !== 'user'
+      ? normalizedUserName
+      : t('userFallback');
+  const dateLocale = locale === 'kr' ? 'ko-KR' : locale;
+  const searchStatusLabels: Record<string, string> = {
+    completed: t('completed'),
+    processing: t('processing'),
+    failed: t('failed'),
+    pendingReview: t('pendingReview'),
+    reviewPending: t('reviewPending'),
+  };
 
   // State for copy feedback
   const [copied, setCopied] = useState(false);
@@ -105,7 +118,7 @@ export default function DashboardPage() {
   };
 
   if (loading && !stats) {
-    return <div className="p-4 text-gray-500 sm:p-8">Loading dashboard...</div>;
+    return <div className="p-4 text-gray-500 sm:p-8">{t('loadingDashboard')}</div>;
   }
 
   return (
@@ -117,9 +130,9 @@ export default function DashboardPage() {
           <div className="flex min-w-0 flex-col items-start gap-3 sm:gap-4">
             <h1
               className="max-w-full truncate text-2xl font-bold tracking-tight text-black sm:text-3xl"
-              title={t('welcome', { name: user?.name || 'User' })}
+              title={t('welcome', { name: displayName })}
             >
-              {t('welcome', { name: user?.name || 'User' })}
+              {t('welcome', { name: displayName })}
             </h1>
             <p className="mt-1 max-w-full truncate text-sm text-gray-500 sm:text-base" title={t('overview')}>
               {t('overview')}
@@ -142,12 +155,12 @@ export default function DashboardPage() {
               {copied ? (
                 <>
                   <Check size={14} strokeWidth={3} className="animate-bounce" />
-                  <span className="min-w-0 truncate">{t('copied') || 'Copied!'}</span>
+                  <span className="min-w-0 truncate">{t('copied')}</span>
                 </>
               ) : (
                 <>
                   <UserPlus size={14} strokeWidth={3} />
-                  <span className="min-w-0 truncate">{t('referralLink') || 'Referral Link'}</span>
+                  <span className="min-w-0 truncate">{t('referralLink')}</span>
                   <Copy size={12} className="opacity-60 group-hover:opacity-100 transition-opacity" />
                 </>
               )}
@@ -161,8 +174,8 @@ export default function DashboardPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 sm:mb-8 sm:gap-6">
         <StatCard title={t('totalScans')} value={stats?.totalScans || 0} />
         <StatCard title={t('matchesFound')} value={stats?.totalMatches || 0} />
-        <StatCard title="Monitor Complete" value={stats?.monitorComplete || 0} />
-        <StatCard title="Pending Review" value={stats?.pendingReview || 0} />
+        <StatCard title={t('monitorComplete')} value={stats?.monitorComplete || 0} />
+        <StatCard title={t('pendingReview')} value={stats?.pendingReview || 0} />
       </div>
 
       {/* --- MAIN CONTENT GRID --- */}
@@ -189,7 +202,7 @@ export default function DashboardPage() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-200 shadow-sm sm:h-14 sm:w-14">
-                          <img src={search.image} alt="scan" className="h-full w-full object-cover" />
+                          <img src={search.image} alt={t('scanImageAlt')} className="h-full w-full object-cover" />
                         </div>
                         <div className="min-w-0">
                           <p
@@ -200,9 +213,9 @@ export default function DashboardPage() {
                           </p>
                           <p
                             className="mt-0.5 truncate text-xs font-medium text-gray-400"
-                            title={new Date(search.time).toLocaleDateString()}
+                            title={new Date(search.time).toLocaleDateString(dateLocale)}
                           >
-                            {new Date(search.time).toLocaleDateString()}
+                            {new Date(search.time).toLocaleDateString(dateLocale)}
                           </p>
                         </div>
                       </div>
@@ -213,7 +226,7 @@ export default function DashboardPage() {
                           </p>
                           <p className="flex items-center gap-1 overflow-hidden text-[10px] font-black uppercase tracking-wider text-gray-600 sm:justify-end">
                             <CheckCircle2 size={12} className="shrink-0" />
-                            <span className="truncate">{t(search.status)}</span>
+                            <span className="truncate">{searchStatusLabels[search.status] ?? search.status}</span>
                           </p>
                         </div>
                         <ChevronRight size={20} className="shrink-0 text-gray-300 transition-colors group-hover:text-black" />
@@ -223,7 +236,7 @@ export default function DashboardPage() {
                 </Link>
               ))}
               {latestSearches.length === 0 && (
-                <p className="py-8 text-center text-sm italic text-gray-400 sm:py-10">No recent scans found.</p>
+                <p className="py-8 text-center text-sm italic text-gray-400 sm:py-10">{t('recentScansEmpty')}</p>
               )}
             </div>
           </div>
