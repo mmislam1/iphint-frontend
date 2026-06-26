@@ -100,6 +100,13 @@ export interface BillingSnapshot {
     currentPeriodEnd?: string;
     nextBillingDate?: string;
     cancelDate?: string;
+    renewal?: {
+      autoRenew?: boolean;
+      canToggle?: boolean;
+      status?: 'on' | 'off' | string;
+      endsAt?: string | null;
+      renewsAt?: string | null;
+    } | null;
     paddleStatus?: string;
     pendingPlan?: {
       tier: PlanTier;
@@ -124,6 +131,7 @@ export type BillingPageData = {
   snapshot: BillingSnapshot | null;
   countryCode: string;
   code?: string;
+  effectiveFrom?: 'immediately' | 'next_billing_period' | string;
   messages?: string[];
   warnings?: string[];
 };
@@ -256,6 +264,15 @@ const getApiErrorCode = (error: unknown) => {
   }
 
   return extractApiCode(error);
+};
+
+const extractEffectiveFrom = (value: unknown): BillingPageData['effectiveFrom'] => {
+  if (!value || typeof value !== 'object' || !('effectiveFrom' in value)) {
+    return undefined;
+  }
+
+  const effectiveFrom = (value as { effectiveFrom?: unknown }).effectiveFrom;
+  return typeof effectiveFrom === 'string' && effectiveFrom.trim() ? effectiveFrom.trim() : undefined;
 };
 
 const BILLING_API_MESSAGE_MISSING = 'Unable to update billing right now.';
@@ -431,9 +448,14 @@ export const upgradeSubscription = createAsyncThunk<
     const response = await apiClient.patch('/billing/subscription', payload);
     const refreshed = await dispatch(fetchBillingPageData()).unwrap();
     const code = extractApiCode(response.data);
+    const effectiveFrom = extractEffectiveFrom(response.data);
     const withMessages = withBillingApiMessages(refreshed, [response.data]);
 
-    return code ? { ...withMessages, code } : withMessages;
+    return {
+      ...withMessages,
+      ...(code ? { code } : {}),
+      ...(effectiveFrom ? { effectiveFrom } : {}),
+    };
   } catch (error) {
     const code = getApiErrorCode(error);
 

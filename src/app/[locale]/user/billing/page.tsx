@@ -116,12 +116,13 @@ function PlanSummary({
   renewalRenewsAt: string | null;
   onAutoRenewToggle: (enabled: boolean) => void;
 }) {
+  const billingPeriodDate = autoRenewEnabled ? renewalRenewsAt : renewalEndsAt;
   const renewalDetail =
     !hasEffectivePlan || (!canToggleAutoRenew && !renewalEndsAt && !renewalRenewsAt)
       ? t('subscribeToPaidPlan')
       : autoRenewEnabled
-        ? t('nextRenewal', { date: formatDate(renewalRenewsAt) })
-        : t('accessContinuesUntil', { date: formatDate(renewalEndsAt) });
+        ? t('renewsOn', { date: formatDate(billingPeriodDate) })
+        : t('endsOn', { date: formatDate(billingPeriodDate) });
 
   return (
     <section className="border-y border-gray-200 py-4 sm:py-5">
@@ -138,9 +139,10 @@ function PlanSummary({
             )}
           </div>
           {hasEffectivePlan ? (
-            <p className="mt-1 text-sm text-gray-500">
-              {getCycleLabel(currentBillingCycle)} / {currentPlanPrice}
-            </p>
+            <div className="mt-1 space-y-0.5 text-sm text-gray-500">
+              <p>{t('planPeriodLabel', { period: getCycleLabel(currentBillingCycle) })}</p>
+              <p>{t('planPriceLabel', { price: currentPlanPrice })}</p>
+            </div>
           ) : (
             <p className="mt-1 text-sm text-gray-500">{t('noActivePlan')}</p>
           )}
@@ -194,19 +196,19 @@ function PlanSummary({
             </p>
             <p className="mt-1 text-sm font-medium text-gray-900">{renewalDetail}</p>
           </div>
+        </div>
+      )}
 
-          {scheduledPlan && (
-            <div className="min-w-0 border-t border-gray-200 pt-4 md:col-span-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('scheduledPlanTitle')}</p>
-              <p className="mt-1 text-sm font-semibold">
-                {scheduledPlan.name} / {getCycleLabel(scheduledPlan.billingCycle)}
-              </p>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
-                <span>{t('scheduledPlanChargeAt', { date: formatDate(scheduledPlan.chargeAt) })}</span>
-                <span>{t('scheduledPlanActivatesAt', { date: formatDate(scheduledPlan.activatesAt) })}</span>
-              </div>
-            </div>
-          )}
+      {scheduledPlan && (
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">{t('scheduledPlanTitle')}</p>
+          <p className="mt-1 text-sm font-semibold text-amber-950">
+            {t('scheduledPlanSummary', {
+              name: scheduledPlan.name,
+              cycle: getCycleLabel(scheduledPlan.billingCycle),
+              date: formatDate(scheduledPlan.effectiveAt ?? scheduledPlan.activatesAt),
+            })}
+          </p>
         </div>
       )}
     </section>
@@ -248,7 +250,13 @@ function PlanPicker({
   trialDaysLeft: number | null;
   formatPrice: (value: number) => string;
   getLocalizedPlanFeatures: (plan: Plan) => string[];
-  getPlanCtaLabel: (planTier: PlanTier, isWorking: boolean, isPendingTargetPlan: boolean) => string;
+  getPlanCtaLabel: (
+    planTier: PlanTier,
+    billingCycle: BillingCycle,
+    isWorking: boolean,
+    isPendingTargetPlan: boolean,
+    isCurrentCard: boolean,
+  ) => string;
   handlePlanAction: (tier: PlanTier) => void;
   setCycle: (cycle: BillingCycle) => void;
 }) {
@@ -286,18 +294,18 @@ function PlanPicker({
       <div id="plan-cards" className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {plans.map((plan) => {
           const price = cycle === 'annual' ? plan.pricing.annual : plan.pricing.monthly;
-          const isCurrent = currentTier ? plan.tier === currentTier : false;
+          const cardBillingCycle = cycle;
+          const isCurrent = Boolean(currentTier && plan.tier === currentTier && currentBillingCycle === cardBillingCycle);
           const isCurrentPaidPlan = isCurrent && hasExistingPaddleSubscription;
-          const isCurrentSelectedCycle = currentBillingCycle === cycle;
           const isPendingTargetPlan =
             !!visibleScheduledPlan &&
             visibleScheduledPlan.tier === plan.tier &&
-            visibleScheduledPlan.billingCycle === cycle;
+            visibleScheduledPlan.billingCycle === cardBillingCycle;
           const isWorking = savingPlan === plan.tier || checkoutPlan === plan.tier || upgradeLoading === plan.tier;
-          const isDisabled = isWorking || isPendingTargetPlan || (isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan);
+          const isDisabled = isWorking || isPendingTargetPlan || (isCurrentPaidPlan && !hasScheduledPlan);
           const planButtonClass = [
             'mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-            isCurrentPaidPlan && isCurrentSelectedCycle
+            isCurrentPaidPlan
               ? 'border border-gray-200 bg-gray-200 text-gray-500'
               : 'bg-gray-900 text-white hover:bg-gray-800',
           ].join(' ');
@@ -310,10 +318,10 @@ function PlanPicker({
                 isCurrent ? 'border-gray-900 ring-1 ring-gray-900/10' : 'border-gray-200',
               ].join(' ')}
             >
-              {isCurrent && isTrial && (
+              {(isPendingTargetPlan || isCurrent) && (
                 <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                   <Crown className="h-3 w-3" />
-                  {t('proTrialBadge')}
+                  {isPendingTargetPlan ? t('scheduledPlanButton') : isTrial ? t('proTrialBadge') : t('currentBadge')}
                 </span>
               )}
 
@@ -352,9 +360,9 @@ function PlanPicker({
                 onClick={() => handlePlanAction(plan.tier)}
                 className={planButtonClass}
               >
-                {isCurrentPaidPlan && isCurrentSelectedCycle && !hasScheduledPlan
+                {isCurrentPaidPlan && !hasScheduledPlan
                   ? t('currentPlanButton')
-                  : getPlanCtaLabel(plan.tier, isWorking, isPendingTargetPlan)}
+                  : getPlanCtaLabel(plan.tier, cardBillingCycle, isWorking, isPendingTargetPlan, isCurrentPaidPlan)}
               </button>
             </div>
           );
@@ -607,6 +615,15 @@ export default function BillingPage() {
     }
   }, [showApiPayloadToasts, showToast]);
 
+  const showBillingResultWithRequiredMessage = useCallback((result: BillingPageData, type: BillingToastType, message: string) => {
+    const { errors, warnings } = getApiPayloadMessages(result, toastLocale);
+    const code = readResponseCode(result);
+
+    errors.forEach((errorMessage) => showToast('error', errorMessage, code));
+    warnings.forEach((warningMessage) => showToast('warning', warningMessage, code));
+    showToast(type, message, code);
+  }, [showToast, toastLocale]);
+
   const refreshNotifications = useCallback(async () => {
     try {
       await dispatch(
@@ -671,6 +688,9 @@ export default function BillingPage() {
   const brief = snapshot?.brief ?? null;
   const currentSubscription = snapshot?.subscription ?? null;
   const briefCurrentPlan = brief?.currentPlan ?? null;
+  const currentPlanLimits = briefCurrentPlan?.limits ?? briefCurrentPlan?.resourceLimits ?? null;
+  const subscriptionRenewal = currentSubscription?.renewal ?? null;
+  const renewal = brief?.renewal ?? subscriptionRenewal ?? null;
   const hasBriefPlan = Boolean(briefCurrentPlan?.name || briefCurrentPlan?.tier);
   const hasLegacyEffectivePlan =
     !!currentSubscription &&
@@ -684,6 +704,16 @@ export default function BillingPage() {
   const currentPlanFromCatalog = currentTier ? plans.find((plan) => plan.tier === currentTier) ?? snapshot?.plan : snapshot?.plan;
   const currentPlanName = briefCurrentPlan?.name || (hasEffectivePlan ? currentPlanFromCatalog?.name ?? '--' : '--');
   const currentBillingCycle = briefCurrentPlan?.billingCycle ?? currentSubscription?.billingCycle ?? cycle;
+  const currentPlanDisplayName = hasEffectivePlan
+    ? `${currentPlanName} (${getCycleLabel(currentBillingCycle)})`
+    : currentPlanName;
+
+  useEffect(() => {
+    if (briefCurrentPlan?.billingCycle) {
+      setCycle(briefCurrentPlan.billingCycle);
+    }
+  }, [briefCurrentPlan?.billingCycle]);
+
   const isTrial = Boolean(
     brief?.trial?.isTrial ??
       (!!currentSubscription &&
@@ -695,7 +725,7 @@ export default function BillingPage() {
   const isPaidSubscription = Boolean(
     currentSubscription?.paddleManaged ||
       currentSubscription?.grantSource === 'paid' ||
-      (hasEffectivePlan && !isTrial && brief?.renewal),
+      (hasEffectivePlan && !isTrial && renewal),
   );
   const legacyCancelDate = currentSubscription?.cancelDate ?? null;
   const legacyCancelTime = legacyCancelDate ? new Date(legacyCancelDate).getTime() : Number.NaN;
@@ -705,23 +735,26 @@ export default function BillingPage() {
     Number.isFinite(legacyCancelTime) &&
     legacyCancelTime > Date.now();
   const autoRenewEnabled =
-    typeof brief?.renewal?.autoRenew === 'boolean'
-      ? brief.renewal.autoRenew
+    typeof renewal?.autoRenew === 'boolean'
+      ? renewal.autoRenew
       : Boolean(currentSubscription?.status === 'active' && currentSubscription?.paddleManaged && !hasLegacyAutoRenewOff);
-  const renewalEndsAt = brief?.renewal?.endsAt ?? legacyCancelDate ?? currentSubscription?.currentPeriodEnd ?? null;
-  const renewalRenewsAt = brief?.renewal?.renewsAt ?? currentSubscription?.nextBillingDate ?? null;
+  const renewalEndsAt = renewal?.endsAt ?? legacyCancelDate ?? currentSubscription?.currentPeriodEnd ?? null;
+  const renewalRenewsAt = renewal?.renewsAt ?? currentSubscription?.nextBillingDate ?? currentSubscription?.currentPeriodEnd ?? null;
   const isAutoRenewOff = isPaidSubscription && !autoRenewEnabled;
   const hasExistingPaddleSubscription = isPaidSubscription && !isTrial;
   const canToggleAutoRenew =
-    typeof brief?.renewal?.canToggle === 'boolean'
-      ? brief.renewal.canToggle
+    typeof renewal?.canToggle === 'boolean'
+      ? renewal.canToggle
       : isPaidSubscription && hasEffectivePlan;
   const scheduledPlan = useMemo<NormalizedScheduledPlan | null>(() => {
     const scheduled = brief?.scheduledPlan;
     if (scheduled) {
+      const scheduledTier = isPlanTier(scheduled.tier) ? scheduled.tier : null;
+      const catalogName = scheduledTier ? plans.find((plan) => plan.tier === scheduledTier)?.name : null;
+
       return {
-        tier: isPlanTier(scheduled.tier) ? scheduled.tier : null,
-        name: scheduled.name || String(scheduled.tier ?? ''),
+        tier: scheduledTier,
+        name: scheduled.name || catalogName || String(scheduled.tier ?? ''),
         billingCycle: scheduled.billingCycle ?? currentBillingCycle,
         effectiveAt: scheduled.effectiveAt ?? null,
         chargeAt: scheduled.chargeAt ?? null,
@@ -729,18 +762,8 @@ export default function BillingPage() {
       };
     }
 
-    const pendingPlan = currentSubscription?.pendingPlan;
-    if (!pendingPlan) return null;
-
-    return {
-      tier: pendingPlan.tier,
-      name: pendingPlan.name,
-      billingCycle: pendingPlan.billingCycle,
-      effectiveAt: pendingPlan.effectiveAt ?? null,
-      chargeAt: null,
-      activatesAt: pendingPlan.effectiveAt ?? null,
-    };
-  }, [brief?.scheduledPlan, currentBillingCycle, currentSubscription?.pendingPlan]);
+    return null;
+  }, [brief?.scheduledPlan, currentBillingCycle, plans]);
   const visibleScheduledPlan = scheduledPlan;
   const hasScheduledPlan = !!visibleScheduledPlan;
 
@@ -767,9 +790,11 @@ export default function BillingPage() {
     return Math.max(0, limit - safeUsed);
   }, [snapshot]);
   const creditsTotal = useMemo(() => {
-    const limit = Number(snapshot?.usage?.imageUploadLimit ?? currentPlanFromCatalog?.imageUploadLimit ?? 0);
+    const limit = Number(
+      currentPlanLimits?.imageUploadLimit ?? snapshot?.usage?.imageUploadLimit ?? currentPlanFromCatalog?.imageUploadLimit ?? 0,
+    );
     return Number.isFinite(limit) ? Math.max(0, limit) : 0;
-  }, [currentPlanFromCatalog?.imageUploadLimit, snapshot?.usage?.imageUploadLimit]);
+  }, [currentPlanFromCatalog?.imageUploadLimit, currentPlanLimits?.imageUploadLimit, snapshot?.usage?.imageUploadLimit]);
   const creditsProgressPercent =
     creditsRemaining == null
       ? 100
@@ -816,32 +841,83 @@ export default function BillingPage() {
 
   const getPlanName = (planTier: PlanTier) => plans.find((plan) => plan.tier === planTier)?.name || planTier;
 
-  const getPlanCtaLabel = (planTier: PlanTier, isWorking: boolean, isPendingTargetPlan: boolean) => {
-    if (isWorking) return isKoreanLocale ? '처리 중...' : 'Processing...';
+  const getPlanChangeIntent = (targetTier: PlanTier, targetBillingCycle: BillingCycle) => {
+    if (!hasEffectivePlan || !currentTier || currentTierIndex < 0) return 'new';
+
+    const targetTierIndex = tierOrder.indexOf(targetTier);
+    if (targetTier === currentTier && targetBillingCycle === currentBillingCycle) return 'current';
+    if (targetTier === currentTier && targetBillingCycle !== currentBillingCycle) return 'switchCycle';
+    if (targetTierIndex > currentTierIndex) return 'upgrade';
+    if (targetTierIndex < currentTierIndex) return 'downgrade';
+    if (targetBillingCycle !== currentBillingCycle) return 'switchCycle';
+
+    return 'lateral';
+  };
+
+  const getPlanCtaLabel = (
+    planTier: PlanTier,
+    targetBillingCycle: BillingCycle,
+    isWorking: boolean,
+    isPendingTargetPlan: boolean,
+    isCurrentCard: boolean,
+  ) => {
+    if (isWorking) return t('processing');
     if (isPendingTargetPlan) return t('scheduledPlanButton');
 
-    if (hasScheduledPlan && currentTier && planTier === currentTier) {
+    if (hasScheduledPlan && isCurrentCard) {
       return t('keepCurrentPlan');
     }
 
+    if (isCurrentCard) return t('currentPlanButton');
+
     if (isTrial) {
-      if (planTier === currentTier) return isKoreanLocale ? '지금 구독' : 'Subscribe now';
-      if (planTier === 'premium') return isKoreanLocale ? 'Premium으로 업그레이드' : 'Upgrade to Premium';
+      if (planTier === currentTier) return t('subscribeNow');
+      if (planTier === 'premium') return t('upgradeToPlan', { plan: getPlanName(planTier) });
     }
 
-    const planIndex = tierOrder.indexOf(planTier);
     if (!hasEffectivePlan) {
-      return isKoreanLocale ? `${getPlanName(planTier)} 구매` : `Buy ${getPlanName(planTier)}`;
+      return t('buyPlan', { plan: getPlanName(planTier) });
     }
 
     if (hasExistingPaddleSubscription) {
-      if (planTier === currentTier && cycle !== currentBillingCycle) return t('changeBillingCycle');
-      if (planIndex > currentTierIndex) return isKoreanLocale ? `${getPlanName(planTier)}로 업그레이드` : `Upgrade to ${getPlanName(planTier)}`;
-      if (planIndex < currentTierIndex) return isKoreanLocale ? `${getPlanName(planTier)}로 다운그레이드` : `Downgrade to ${getPlanName(planTier)}`;
+      const intent = getPlanChangeIntent(planTier, targetBillingCycle);
+      if (intent === 'switchCycle') {
+        return targetBillingCycle === 'annual' ? t('switchToAnnual') : t('switchToMonthly');
+      }
+      if (intent === 'upgrade') return t('upgradeToPlan', { plan: getPlanName(planTier) });
+      if (intent === 'downgrade') return t('downgradeToPlan', { plan: getPlanName(planTier) });
     }
 
-    return isKoreanLocale ? `${getPlanName(planTier)} 구독` : `Subscribe to ${getPlanName(planTier)}`;
+    return t('subscribeToPlanButton', { plan: getPlanName(planTier) });
   };
+
+  const formatPlanWithCycle = useCallback(
+    (planName: string, billingCycle: BillingCycle) => `${planName} (${getCycleLabel(billingCycle)})`,
+    [getCycleLabel],
+  );
+
+  const getSnapshotCurrentPlanLabel = useCallback((billingSnapshot?: BillingSnapshot | null) => {
+    const snapshotCurrentPlan = billingSnapshot?.brief?.currentPlan;
+    const snapshotTier = isPlanTier(snapshotCurrentPlan?.tier) ? snapshotCurrentPlan.tier : billingSnapshot?.plan?.tier;
+    const snapshotCycle =
+      snapshotCurrentPlan?.billingCycle ?? billingSnapshot?.subscription?.billingCycle ?? currentBillingCycle;
+    const snapshotPlanName =
+      snapshotCurrentPlan?.name ||
+      (snapshotTier ? plans.find((plan) => plan.tier === snapshotTier)?.name : null) ||
+      billingSnapshot?.plan?.name ||
+      currentPlanName;
+
+    return formatPlanWithCycle(snapshotPlanName, snapshotCycle);
+  }, [currentBillingCycle, currentPlanName, formatPlanWithCycle, plans]);
+
+  const getScheduledActivationDate = (billingSnapshot?: BillingSnapshot | null) =>
+    billingSnapshot?.brief?.scheduledPlan?.effectiveAt ??
+    billingSnapshot?.brief?.scheduledPlan?.activatesAt ??
+    billingSnapshot?.subscription?.renewal?.renewsAt ??
+    billingSnapshot?.brief?.renewal?.renewsAt ??
+    billingSnapshot?.subscription?.nextBillingDate ??
+    billingSnapshot?.subscription?.currentPeriodEnd ??
+    null;
 
   const schedulePlanChange = async (
     tier: PlanTier,
@@ -862,10 +938,29 @@ export default function BillingPage() {
         showBillingResult(result, 'info', t('autoRenewScheduleCancelled'));
       } else if (options?.cancelScheduledChange) {
         showBillingResult(result, 'success', t('scheduledPlanCancelled'));
-      } else if (options?.fromCheckoutConflict) {
-        showBillingResult(result, 'info', t('activeSubscriptionChangeStarted'));
+      } else if (result.effectiveFrom === 'immediately') {
+        showBillingResultWithRequiredMessage(
+          result,
+          'success',
+          t('planNowActive', { plan: getSnapshotCurrentPlanLabel(result.snapshot) }),
+        );
+      } else if (result.effectiveFrom === 'next_billing_period' || result.snapshot?.brief?.scheduledPlan) {
+        const activationDate = getScheduledActivationDate(result.snapshot);
+        showBillingResultWithRequiredMessage(
+          result,
+          options?.fromCheckoutConflict ? 'info' : 'success',
+          activationDate
+            ? t('planChangeScheduledForDate', { date: formatDate(activationDate) })
+            : t('planChangeScheduledNextBillingDate'),
+        );
       } else {
-        showBillingResult(result, 'success', t('planChangeScheduled'));
+        showBillingResult(
+          result,
+          options?.fromCheckoutConflict ? 'info' : 'success',
+          options?.fromCheckoutConflict
+            ? t('activeSubscriptionChangeStarted')
+            : t('planNowActive', { plan: getSnapshotCurrentPlanLabel(result.snapshot) }),
+        );
       }
     } catch (err) {
       if (!showApiPayloadToasts(getAxiosResponseData(err), 'error')) {
@@ -886,16 +981,32 @@ export default function BillingPage() {
 
         void (async () => {
           let trialStartedToastShown = false;
+          let checkoutActiveToastShown = false;
           const showTrialStartedToast = (result: BillingPageData) => {
             if (trialStartedToastShown || !isTrialBillingResult(result)) return;
             trialStartedToastShown = true;
             showToast('success', t('trialStartedToast'));
+          };
+          const showCheckoutActiveToast = (result: BillingPageData) => {
+            if (checkoutActiveToastShown || isTrialBillingResult(result)) return;
+            if (!result.snapshot?.brief?.currentPlan && !result.snapshot?.plan) return;
+
+            checkoutActiveToastShown = true;
+            showToast('success', t('checkoutActiveToast', { plan: getSnapshotCurrentPlanLabel(result.snapshot) }));
           };
 
           try {
             await apiClient.post('/billing/sync', transactionId ? { transactionId } : {});
           } catch {
             // Webhooks and polling below still provide eventual consistency.
+          }
+
+          try {
+            const syncedResult = await dispatch(fetchBillingPageData()).unwrap();
+            showTrialStartedToast(syncedResult);
+            showCheckoutActiveToast(syncedResult);
+          } catch {
+            // Polling below still provides eventual consistency.
           }
 
           let attempts = 0;
@@ -906,8 +1017,9 @@ export default function BillingPage() {
               try {
                 const result = await dispatch(fetchBillingPageData()).unwrap();
                 showTrialStartedToast(result);
+                showCheckoutActiveToast(result);
                 const subscription = result.snapshot?.subscription;
-                const renewal = result.snapshot?.brief?.renewal;
+                const renewal = result.snapshot?.brief?.renewal ?? result.snapshot?.subscription?.renewal;
                 if (subscription?.status === 'active' && (subscription.paddleManaged || renewal?.autoRenew)) return;
               } catch {
                 // Try again until attempts are exhausted.
@@ -918,9 +1030,15 @@ export default function BillingPage() {
 
           poll();
           startTransition(() => {
-            void dispatch(fetchBillingPageData()).unwrap().then(showTrialStartedToast).catch(() => {
-              return;
-            });
+            void dispatch(fetchBillingPageData())
+              .unwrap()
+              .then((result) => {
+                showTrialStartedToast(result);
+                showCheckoutActiveToast(result);
+              })
+              .catch(() => {
+                return;
+              });
           });
           void refreshNotifications();
         })();
@@ -940,7 +1058,7 @@ export default function BillingPage() {
         setCheckoutPlan(null);
       }
     },
-    [dispatch, refreshNotifications, showToast, t],
+    [dispatch, getSnapshotCurrentPlanLabel, refreshNotifications, showToast, t],
   );
 
   const ensurePaddle = async () => {
@@ -1133,7 +1251,7 @@ export default function BillingPage() {
   ) => {
     const plan = plans.find((item) => item.tier === tier);
     const priceValue = plan?.pricing?.[billingCycle];
-    const targetTierIndex = tierOrder.indexOf(tier);
+    const changeIntent = getPlanChangeIntent(tier, billingCycle);
 
     setCheckoutError(null);
     setPurchaseWarning({
@@ -1142,8 +1260,10 @@ export default function BillingPage() {
       mode,
       planName: plan?.name || getPlanName(tier),
       price: typeof priceValue === 'number' ? formatPrice(priceValue) : '--',
-      isUpgrade: currentTierIndex >= 0 && targetTierIndex >= 0 && targetTierIndex > currentTierIndex,
-      currentPlanName,
+      isUpgrade:
+        changeIntent === 'upgrade' ||
+        (changeIntent === 'switchCycle' && currentBillingCycle === 'monthly' && billingCycle === 'annual'),
+      currentPlanName: currentPlanDisplayName,
     });
   };
 
@@ -1166,9 +1286,9 @@ export default function BillingPage() {
 
   const handlePlanAction = async (tier: PlanTier) => {
     if (hasExistingPaddleSubscription) {
-      const cancelScheduledChange = Boolean(hasScheduledPlan && currentTier && tier === currentTier);
-      const targetTierIndex = tierOrder.indexOf(tier);
-      const isDowngrade = currentTierIndex >= 0 && targetTierIndex >= 0 && targetTierIndex < currentTierIndex;
+      const isCurrentCardAction = Boolean(currentTier && tier === currentTier && cycle === currentBillingCycle);
+      const cancelScheduledChange = Boolean(hasScheduledPlan && isCurrentCardAction);
+      const isDowngrade = getPlanChangeIntent(tier, cycle) === 'downgrade';
       if (isAutoRenewOff && isDowngrade) {
         showToast('warning', t('turnRenewalOnBeforeDowngrade'));
         return;
@@ -1443,7 +1563,7 @@ export default function BillingPage() {
 
       <PlanSummary
         t={t}
-        currentPlanName={currentPlanName}
+        currentPlanName={currentPlanDisplayName}
         currentBillingCycle={currentBillingCycle}
         currentPlanPrice={currentPlanPrice}
         hasEffectivePlan={hasEffectivePlan}
