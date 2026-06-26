@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
@@ -251,19 +251,26 @@ function SignupForm() {
               <p className="mb-1 text-xs font-medium text-red-600">{fieldErrors.phoneNumber}</p>
             )}
             <label className="block text-sm sm:text-base font-semibold text-black mb-2">{t('contactLabel')}</label>
-            <div className="flex border border-gray-300 rounded-[12px] overflow-hidden focus-within:ring-2 focus-within:ring-black transition-all bg-white h-14">
-              <select
-                name="phoneCode"
-                value={formData.phoneCode}
-                onChange={handleChange}
-                className="px-4 py-3 bg-transparent border-r border-gray-300 outline-none cursor-pointer min-w-[80px] text-sm appearance-none"
-              >
-                {uniqueDialCodes.map((country, idx) => (
-                  <option key={idx} value={country!.dial}>
-                    {country!.dial}
-                  </option>
-                ))}
-              </select>
+            <div className="flex h-14 overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-200">
+              <div className="relative shrink-0">
+                <select
+                  name="phoneCode"
+                  value={formData.phoneCode}
+                  onChange={handleChange}
+                  className="h-full min-w-[104px] cursor-pointer appearance-none border-r border-gray-300 bg-white py-3 pl-4 pr-8 text-sm text-gray-900 outline-none transition-colors hover:bg-gray-50"
+                >
+                  {uniqueDialCodes.map((country, idx) => (
+                    <option key={idx} value={country!.dial} className="bg-white text-gray-900">
+                      {country!.dial}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  size={14}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                />
+              </div>
               <input
                 name="phoneNumber"
                 type="tel"
@@ -271,7 +278,7 @@ function SignupForm() {
                 placeholder={t('phonePlaceholder')}
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="w-full px-4 py-3 outline-none placeholder-gray-300 text-sm"
+                className="w-full px-4 py-3 text-sm outline-none placeholder-gray-400"
               />
             </div>
           </div>
@@ -283,21 +290,21 @@ function SignupForm() {
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
-                className="input-field cursor-pointer"
+                className="h-14 w-full cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-3 pl-4 pr-10 text-sm text-gray-900 shadow-sm outline-none transition-colors focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
               >
                 <option value="KR">{t('defaultCountry')}</option>
                 <option disabled>----------</option>
                 {countries.map((country) => (
-                  <option key={country.code} value={country.code}>
+                  <option key={country.code} value={country.code} className="bg-white text-gray-900">
                     {country.name} {country.code}
                   </option>
                 ))}
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              <ChevronDown
+                aria-hidden="true"
+                size={16}
+                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500"
+              />
             </div>
           </div>
 

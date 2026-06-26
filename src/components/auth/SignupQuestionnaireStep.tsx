@@ -105,24 +105,24 @@ function SelectField({
           value={value}
           onChange={(event) => onChange(field.name, event.target.value)}
           className={[
-            'input-field cursor-pointer pr-12 typo-t6',
-            value ? 'text-black' : 'text-tx-6',
+            'h-14 w-full cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-3 pl-4 pr-10 text-sm shadow-sm outline-none transition-colors focus:border-gray-400 focus:ring-2 focus:ring-gray-200',
+            value ? 'text-gray-900' : 'text-gray-400',
           ].join(' ')}
         >
           <option value="" disabled>
             {placeholder}
           </option>
           {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="bg-white text-gray-900">
               {t(option.labelKey)}
             </option>
           ))}
         </select>
         <ChevronDown
           aria-hidden="true"
-          size={22}
+          size={16}
           strokeWidth={2}
-          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-black"
+          className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500"
         />
       </div>
     </div>
